@@ -79,7 +79,12 @@ enum ArrayOp {
 }
 
 abstract class Criterion {
+  isLastFulfilled: boolean = false;
   abstract isFulfilled(academicPlan: AcademicPlan): boolean;
+  storeIsFulfilled(academicPlan: AcademicPlan): boolean {
+    this.isLastFulfilled = this.isFulfilled(academicPlan);
+    return this.isLastFulfilled;
+  }
 }
 
 class ArrayCriterion extends Criterion {
@@ -172,7 +177,6 @@ abstract class Basket {
   }
 }
 
-// polymorphsim vs type switch, which would be better?
 class OrBasket extends Basket {
   baskets: Array<Basket>;
   constructor(baskets: Array<Basket>) {
@@ -188,7 +192,7 @@ class OrBasket extends Basket {
   }
 }
 
-class AllBasket extends Basket {
+class AndBasket extends Basket {
   baskets: Array<Basket>;
   constructor(baskets: Array<Basket>) {
     super();
@@ -273,9 +277,13 @@ class AcademicPlan {
 function testAppliedMathsPlan() {
   // Level 1000
   const ma1100 = new Module("MA1100", "", 4);
+  const ma1100t = new Module("MA1100T", "", 4);
   const cs1231 = new Module("CS1231", "", 4);
+  const cs1231s = new Module("CS1231S", "", 4);
   const ma1101r = new Module("MA1101R", "", 4);
+  const ma2001 = new Module("MA2001", "", 4);
   const ma1102r = new Module("MA1102R", "", 4);
+  const ma2002 = new Module("MA2002", "", 4);
   const cs1010 = new Module("CS1010", "", 4);
   const cs1010e = new Module("CS1010E", "", 4);
   const cs1010s = new Module("CS1010S", "", 4);
@@ -298,7 +306,39 @@ function testAppliedMathsPlan() {
   // Level 4000
 
   const academicPlan = new AcademicPlan(4);
-  const level1000Basket = new AllBasket([]);
+  // const listIIBasket = new ListBasket
+
+  const level1000Basket = new AndBasket([
+    new OrBasket([
+      new ModuleBasket(ma1100),
+      new ModuleBasket(ma1100t),
+      new ModuleBasket(cs1231),
+      new ModuleBasket(cs1231s),
+    ]),
+    new OrBasket([new ModuleBasket(ma1101r), new ModuleBasket(ma2001)]),
+    new OrBasket([new ModuleBasket(ma1102r), new ModuleBasket(ma2002)]),
+    new OrBasket([
+      new ModuleBasket(cs1010),
+      new ModuleBasket(cs1010e),
+      new ModuleBasket(cs1010s),
+      new ModuleBasket(cs1010x),
+      new ModuleBasket(cs1101s),
+    ]),
+  ]);
+
+  // The last part of the level 2000 basket is "Pass one additional mod from List II, III, IV"
+  // This is probably quite hard to do efficiently.
+  const level2000Basket = new AndBasket([
+    new OrBasket([new ModuleBasket(ma2101), new ModuleBasket(ma2101s)]),
+    new ModuleBasket(ma2104),
+    new OrBasket([new ModuleBasket(ma2108), new ModuleBasket(ma2108s)]),
+    new ModuleBasket(ma2213),
+    new OrBasket([
+      new ModuleBasket(ma2216),
+      new ModuleBasket(ma2116),
+      new ModuleBasket(st2131),
+    ]),
+  ]);
 }
 
 export {};
