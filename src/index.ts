@@ -38,14 +38,18 @@ abstract class Filter {
 class PropertyFilter<K extends keyof Module> extends Filter {
   propertyName: K;
   equals: Module[K];
-  constructor(propertyName: K, equals: Module[K]) {
+  negate: boolean;
+  constructor(propertyName: K, equals: Module[K], negate: boolean = false) {
     super();
     this.propertyName = propertyName;
     this.equals = equals;
+    this.negate = negate;
   }
 
   filter(module: Module): boolean {
-    return module[this.propertyName] == this.equals;
+    return this.negate
+      ? module[this.propertyName] == this.equals
+      : module[this.propertyName] != this.equals;
   }
 }
 
@@ -64,6 +68,21 @@ class PropertyArrayFilter<K extends keyof Module> extends Filter {
   }
 }
 
+class PropertySetFilter<K extends keyof Module> extends Filter {
+  propertyName: K;
+  set: Set<Module[K]>;
+
+  constructor(propertyName: K, set: Set<Module[K]>) {
+    super();
+    this.propertyName = propertyName;
+    this.set = set;
+  }
+
+  filter(module: Module): boolean {
+    return this.set.has(module[this.propertyName]);
+  }
+}
+
 enum BinaryOp {
   EQ,
   NEQ,
@@ -78,25 +97,33 @@ enum ArrayOp {
   SOME,
 }
 
-abstract class Criterion {
+class CriterionState {
   isLastFulfilled: boolean = false;
-  abstract isFulfilled(academicPlan: AcademicPlan): boolean;
-  storeIsFulfilled(academicPlan: AcademicPlan): boolean {
-    this.isLastFulfilled = this.isFulfilled(academicPlan);
-    return this.isLastFulfilled;
+}
+
+abstract class Criterion<S extends CriterionState = CriterionState> {
+  state: S;
+  abstract isFulfilled(academicPlan: AcademicPlanView): boolean;
+}
+
+class TrueCriterion extends Criterion {
+  isFulfilled(academicPlan: AcademicPlanView): boolean {
+    return true;
   }
 }
 
-class ArrayCriterion extends Criterion {
-  criteria: Array<Criterion>;
+class ArrayCriterionState extends CriterionState {}
+
+class ArrayCriterion extends Criterion<ArrayCriterionState> {
+  criteria: Array<Criterion<any>>;
   arrayOp: ArrayOp;
-  constructor(criteria: Array<Criterion>, arrayOp: ArrayOp) {
+  constructor(criteria: Array<Criterion<any>>, arrayOp: ArrayOp) {
     super();
     this.criteria = criteria;
     this.arrayOp = arrayOp;
   }
 
-  isFulfilled(academicPlan: AcademicPlan): boolean {
+  isFulfilled(academicPlan: AcademicPlanView): boolean {
     switch (this.arrayOp) {
       case ArrayOp.EVERY:
         return this.criteria.every((criterion) =>
@@ -110,43 +137,57 @@ class ArrayCriterion extends Criterion {
   }
 }
 
-class ArithmeticCriterion extends Criterion {
+class FilterCriterion extends Criterion {
   where: Filter;
-  binaryOp: BinaryOp;
-  value: number;
-  constructor(where: Filter, binaryOp: BinaryOp, value: number) {
+  criterion: Criterion;
+  constructor(where: Filter, criterion: Criterion) {
     super();
     this.where = where;
+    this.criterion = criterion;
+  }
+
+  isFulfilled(academicPlan: AcademicPlanView): boolean {
+    return this.criterion.isFulfilled(
+      academicPlan.withModulesFilteredBy(this.where)
+    );
+  }
+}
+
+class ArithmeticCriterion extends Criterion {
+  binaryOp: BinaryOp;
+  value: number;
+  constructor(binaryOp: BinaryOp, value: number) {
+    super();
     this.binaryOp = binaryOp;
     this.value = value;
   }
 
-  isFulfilled(academicPlan: AcademicPlan): boolean {
-    const filtered = academicPlan.getModules().filter(this.where.getFilter());
+  isFulfilled(academicPlan: AcademicPlanView): boolean {
+    const modules = academicPlan.modules;
     switch (this.binaryOp) {
       case BinaryOp.EQ:
-        return filtered.length === this.value;
+        return modules.length === this.value;
       case BinaryOp.NEQ:
-        return filtered.length !== this.value;
+        return modules.length !== this.value;
       case BinaryOp.GEQ:
-        return filtered.length >= this.value;
+        return modules.length >= this.value;
       case BinaryOp.GT:
-        return filtered.length > this.value;
+        return modules.length > this.value;
       case BinaryOp.LEQ:
-        return filtered.length <= this.value;
+        return modules.length <= this.value;
       case BinaryOp.LT:
-        return filtered.length < this.value;
+        return modules.length < this.value;
     }
   }
 }
 
 class PipelineCriterion extends Criterion {
-  pipeline: Array<Criterion | Filter>;
+  pipeline: Array<Criterion<any> | Filter>;
   constructor(pipeline: Array<Criterion | Filter>) {
     super();
     this.pipeline = pipeline;
   }
-  isFulfilled(academicPlan: AcademicPlan): boolean {
+  isFulfilled(academicPlan: AcademicPlanView): boolean {
     let modules = academicPlan.getModules();
     for (const item of this.pipeline) {
       if (item instanceof Filter) {
@@ -177,11 +218,41 @@ abstract class Basket {
   }
 }
 
-class OrBasket extends Basket {
+class BasketState {
+  moduleCodesAlreadyMatched: Set<string>;
+  constructor(moduleCodesAlreadyMatched: Set<string> = new Set()) {
+    this.moduleCodesAlreadyMatched = moduleCodesAlreadyMatched;
+  }
+}
+
+class StatefulBasket extends Basket {
+  basket: Basket;
+  state: BasketState;
+  constructor(basket: Basket, state: BasketState = new BasketState()) {
+    super();
+    this.basket = basket;
+    this.state = state;
+  }
+
+  getDefaultCriterion(): Criterion {
+    return new FilterCriterion(
+      new PropertySetFilter("code", this.state.moduleCodesAlreadyMatched),
+      this.basket.getCriterion()
+    );
+  }
+}
+
+abstract class ArrayBasket extends Basket {
   baskets: Array<Basket>;
   constructor(baskets: Array<Basket>) {
     super();
     this.baskets = baskets;
+  }
+}
+
+class OrBasket extends ArrayBasket {
+  constructor(baskets: Array<Basket>) {
+    super(baskets);
   }
 
   getDefaultCriterion(): Criterion {
@@ -192,11 +263,9 @@ class OrBasket extends Basket {
   }
 }
 
-class AndBasket extends Basket {
-  baskets: Array<Basket>;
+class AndBasket extends ArrayBasket {
   constructor(baskets: Array<Basket>) {
-    super();
-    this.baskets = baskets;
+    super(baskets);
   }
 
   getDefaultCriterion(): Criterion {
@@ -215,10 +284,9 @@ class ModuleBasket extends Basket {
   }
 
   getDefaultCriterion(): Criterion {
-    return new ArithmeticCriterion(
+    return new FilterCriterion(
       new PropertyFilter("code", this.module.code),
-      BinaryOp.GT,
-      0
+      new ArithmeticCriterion(BinaryOp.GT, 0)
     );
   }
 }
@@ -243,6 +311,34 @@ class SemPlan {
 type SemOnePlan = SemPlan;
 type SemTwoPlan = SemPlan;
 
+class AcademicPlanView {
+  private academicPlan: AcademicPlan;
+  modules: Array<Module>;
+  constructor(academicPlan: AcademicPlan, modules: Array<Module>) {
+    this.academicPlan = academicPlan;
+    this.modules = modules;
+  }
+
+  getModules() {
+    return this.modules;
+  }
+
+  withModules(modules: Array<Module>): AcademicPlanView {
+    return new AcademicPlanView(this.academicPlan, modules);
+  }
+
+  withModulesFilteredBy(filter: Filter): AcademicPlanView {
+    return this.withModules(this.modules.filter(filter.getFilter()));
+  }
+
+  withOriginalPlan(): AcademicPlanView {
+    return new AcademicPlanView(
+      this.academicPlan,
+      this.academicPlan.getModules()
+    );
+  }
+}
+
 class AcademicPlan {
   plans: Array<[SemOnePlan, SemTwoPlan]>;
 
@@ -264,6 +360,11 @@ class AcademicPlan {
         this.moduleCodeToModuleMap.set(module.code, module);
       }
     }
+  }
+
+  getPlanView(): AcademicPlanView {
+    this.preprocess();
+    return new AcademicPlanView(this, this.modules);
   }
 
   getModules() {
@@ -292,10 +393,10 @@ function testAppliedMathsPlan() {
 
   // Level 2000
   const ma2101 = new Module("MA2101", "", 4);
-  const ma2101s = new Module("MA2101S", "", 4);
+  const ma2101s = new Module("MA2101S", "", 5);
   const ma2104 = new Module("MA2104", "", 4);
   const ma2108 = new Module("MA2108", "", 4);
-  const ma2108s = new Module("MA2108S", "", 4);
+  const ma2108s = new Module("MA2108S", "", 5);
   const ma2213 = new Module("MA2213", "", 4);
   const ma2216 = new Module("MA2216", "", 4);
   const ma2116 = new Module("MA2116", "", 4);
@@ -304,9 +405,127 @@ function testAppliedMathsPlan() {
   // Level 3000
 
   // Level 4000
+  const ma4199 = new Module("MA4199", "", 12);
+
+  // List II
+  const pc2130 = new Module("PC2130", "", 4);
+  const pc2132 = new Module("PC2132", "", 4);
+  const st2132 = new Module("ST2132", "", 4);
+  const ec2101 = new Module("EC2101", "", 4);
+
+  // List III
+  const bse3703 = new Module("BSE3703", "", 4);
+  const cs3230 = new Module("CS3230", "", 4);
+  const cs3231 = new Module("CS3231", "", 4);
+  const cs3234 = new Module("CS3234", "", 4);
+  const dsa3102 = new Module("DSA3102", "", 4);
+  const ec3101 = new Module("EC3103", "", 4);
+  const ec3303 = new Module("EC3303", "", 4);
+  const pc3130 = new Module("PC3130", "", 4);
+  const pc3236 = new Module("PC3236", "", 4);
+  const pc3238 = new Module("PC3238", "", 4);
+  const st3131 = new Module("ST3131", "", 4);
+  const st3236 = new Module("ST3236", "", 4);
+
+  // AM3A
+  const ma3220 = new Module("MA3220", "", 4);
+  const ma3227 = new Module("MA3227", "", 4);
+  const ma3233 = new Module("MA3233", "", 4);
+  const ma3264 = new Module("MA3264", "", 4);
+  // st3131 as well
+
+  // AM3B
+  const ma3236 = new Module("MA3236", "", 4);
+  const ma3238 = new Module("MA3238", "", 4); // this one has an alternative module code ST3236
+  const ma3252 = new Module("MA3252", "", 4);
+  const ma3269 = new Module("MA3269", "", 4);
+  // st3131 as well
+
+  // AM4A
+  const ma4229 = new Module("MA4299", "", 4);
+  const ma4230 = new Module("MA4230", "", 4);
+  const ma4255 = new Module("MA4255", "", 4);
+  const ma4261 = new Module("MA4261", "", 4);
+  const ma4268 = new Module("MA4268", "", 4);
+  const ma4270 = new Module("MA4270", "", 4);
+
+  // AM4B
+  const ma4235 = new Module("MA4235", "", 4);
+  const ma4254 = new Module("MA4254", "", 4);
+  const ma4260 = new Module("MA4260", "", 4);
+  const ma4264 = new Module("MA4264", "", 4);
+  const ma4269 = new Module("MA4269", "", 4);
+  const qf4103 = new Module("QF4103", "", 4);
+  const st4245 = new Module("ST4245", "", 4);
 
   const academicPlan = new AcademicPlan(4);
-  // const listIIBasket = new ListBasket
+  const listIIBasket = new StatefulBasket(
+    new OrBasket([
+      new ModuleBasket(pc2130),
+      new ModuleBasket(pc2132),
+      new ModuleBasket(st2132),
+      new ModuleBasket(ec2101),
+    ])
+  );
+
+  const listIIIBasket = new OrBasket([
+    new ModuleBasket(bse3703),
+    new ModuleBasket(cs3230),
+    new ModuleBasket(cs3231),
+    new ModuleBasket(cs3234),
+    new ModuleBasket(dsa3102),
+    new ModuleBasket(ec3101),
+    new ModuleBasket(ec3303),
+    new ModuleBasket(pc3130),
+    new ModuleBasket(pc3236),
+    new ModuleBasket(pc3238),
+    new ModuleBasket(st3131),
+    new ModuleBasket(st3236),
+  ]);
+
+  const listIVBasket = new OrBasket([]);
+
+  const am3ABasket = new OrBasket([
+    new ModuleBasket(ma3220),
+    new ModuleBasket(ma3227),
+    new ModuleBasket(ma3233),
+    new ModuleBasket(ma3264),
+    new ModuleBasket(st3131),
+  ]);
+
+  const am3BBasket = new OrBasket([
+    new ModuleBasket(ma3236),
+    new ModuleBasket(ma3238),
+    new ModuleBasket(ma3252),
+    new ModuleBasket(ma3269),
+    new ModuleBasket(st3131),
+  ]);
+
+  const am3Basket = new OrBasket([am3ABasket, am3BBasket]);
+
+  const am4ABasket = new OrBasket([
+    new ModuleBasket(ma4229),
+    new ModuleBasket(ma4230),
+    new ModuleBasket(ma4255),
+    new ModuleBasket(ma4261),
+    new ModuleBasket(ma4268),
+    new ModuleBasket(ma4270),
+  ]);
+
+  const am4BBasket = new OrBasket([
+    new ModuleBasket(ma4235),
+    new ModuleBasket(ma4254),
+    new ModuleBasket(ma4260),
+    new ModuleBasket(ma4261),
+    new ModuleBasket(ma4268),
+    new ModuleBasket(ma4270),
+  ]);
+
+  const am4Basket = new OrBasket([am4ABasket, am4BBasket]);
+
+  const listState = new BasketState();
+  const am3State = new BasketState();
+  const am4State = new BasketState();
 
   const level1000Basket = new AndBasket([
     new OrBasket([
@@ -338,6 +557,30 @@ function testAppliedMathsPlan() {
       new ModuleBasket(ma2116),
       new ModuleBasket(st2131),
     ]),
+    new OrBasket([
+      new StatefulBasket(listIIBasket, listState),
+      new StatefulBasket(listIIIBasket, listState),
+      new StatefulBasket(listIVBasket, listState),
+    ]),
+  ]);
+
+  const level3000Basket = new AndBasket([
+    new StatefulBasket(am3BBasket, am3State),
+    new StatefulBasket(am3Basket, am3State),
+    new StatefulBasket(am3Basket, am3State),
+    new OrBasket([
+      new StatefulBasket(listIIIBasket, listState),
+      new StatefulBasket(listIVBasket, listState),
+    ]),
+  ]);
+
+  const level4000Basket = new AndBasket([
+    new ModuleBasket(ma4199),
+    new StatefulBasket(am4Basket, am4State),
+    new StatefulBasket(am4Basket, am4State),
+    new StatefulBasket(am4Basket, am4State),
+    new StatefulBasket(am4Basket, am4State),
+    new StatefulBasket(listIVBasket, listState),
   ]);
 }
 
