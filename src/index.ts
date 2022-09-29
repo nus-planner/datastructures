@@ -8,7 +8,7 @@
 // Basket Relationships
 // Prereqs
 // Preclusions
-const moduleRegex = /[[:alpha:]]+(?<codeNumber>\d)\d+[[:alpha:]]*/;
+const moduleRegex = /[A-Z]+(?<codeNumber>\d)\d+[A-Z]*/;
 
 class Module {
   code: string;
@@ -19,7 +19,7 @@ class Module {
     this.code = code;
     const match = moduleRegex.exec(code);
     if (match === null || match.groups === undefined) {
-      throw new Error("Invalid module code");
+      throw new Error(`Invalid module code ${code}`);
     }
     this.level = Number.parseInt(match.groups["codeNumber"]);
     this.name = name;
@@ -207,20 +207,28 @@ class ArithmeticCriterion extends Criterion {
 
   isFulfilled(academicPlan: AcademicPlanView): boolean {
     const modules = academicPlan.modules;
+    let fulfilled: boolean;
     switch (this.binaryOp) {
       case BinaryOp.EQ:
-        return modules.length === this.value;
+        fulfilled = modules.length === this.value;
+        if (fulfilled) {
+          for (const module of modules) {
+            this.sendEvent(new CriterionMatchModuleEvent(module));
+          }
+        }
       case BinaryOp.NEQ:
-        return modules.length !== this.value;
+        fulfilled = modules.length !== this.value;
       case BinaryOp.GEQ:
-        return modules.length >= this.value;
+        fulfilled = modules.length >= this.value;
       case BinaryOp.GT:
-        return modules.length > this.value;
+        fulfilled = modules.length > this.value;
       case BinaryOp.LEQ:
-        return modules.length <= this.value;
+        fulfilled = modules.length <= this.value;
       case BinaryOp.LT:
-        return modules.length < this.value;
+        fulfilled = modules.length < this.value;
     }
+
+    return fulfilled;
   }
 }
 
@@ -357,14 +365,14 @@ class ModuleBasket extends Basket {
   }
 
   acceptCriterionEvent(event: CriterionEvent): void {
-    throw new Error("Method not implemented.");
+    console.log("Nothing is done so far.");
   }
 }
 
 class SemPlan {
   modules: Array<Module>;
 
-  moduleCodeToModuleMap: Map<string, Module> = new Map();
+  private moduleCodeToModuleMap: Map<string, Module> = new Map();
 
   constructor(modules: Array<Module>) {
     this.modules = modules;
@@ -439,6 +447,10 @@ class AcademicPlan {
 
   getModules() {
     return this.modules;
+  }
+
+  checkAgainstBasket(basket: Basket): boolean {
+    return basket.getCriterion().isFulfilled(this.getPlanView());
   }
 }
 
@@ -665,6 +677,84 @@ function testAppliedMathsPlan() {
     new StatefulBasket(am4Basket, am4State),
     new StatefulBasket(listIVBasket, listState),
   ]);
+
+  const appliedMathBasket = new AndBasket([
+    level1000Basket,
+    level2000Basket,
+    level3000Basket,
+    level4000Basket,
+  ]);
+
+  const myAcademicPlan = new AcademicPlan(4);
+  const cs2030 = new Module("CS2030", "", 4);
+  const cs2040 = new Module("CS2040", "", 4);
+  const cfg1002 = new Module("CFG1002", "", 4);
+  const es2660 = new Module("ES2660", "", 4);
+  const get1031 = new Module("GET1031", "", 4);
+  const pc1141 = new Module("PC1141", "", 4);
+  academicPlan.plans[0][0].modules.push(
+    cs1010x,
+    cs2030,
+    cs2040,
+    cfg1002,
+    cs1231s,
+    es2660,
+    get1031,
+    ma1101r,
+    ma1102r,
+    pc1141
+  );
+
+  const cs2100 = new Module("CS2100", "", 4);
+  const geq1000 = new Module("GEQ1000", "", 4);
+  const ger1000 = new Module("GER1000", "", 4);
+  const is1103 = new Module("IS1103", "", 4);
+
+  academicPlan.plans[0][1].modules.push(
+    cs2100,
+    geq1000,
+    ger1000,
+    is1103,
+    ma2101,
+    ma2104,
+    ma2108s,
+    st2131
+  );
+
+  const cs2101 = new Module("CS2101", "", 4);
+  const cs2103t = new Module("CS2103T", "", 4);
+  const cs2106 = new Module("CS2106", "", 4);
+  const geh1036 = new Module("GEH1036", "", 4);
+  const ma2202 = new Module("MA2202", "", 4);
+  const ma3210 = new Module("MA3210", "", 4);
+  academicPlan.plans[1][0].modules.push(
+    cs2101,
+    cs2103t,
+    cs2106,
+    cs3230,
+    cs3231,
+    geh1036,
+    ma2202,
+    ma3210
+  );
+
+  const cs2105 = new Module("CS2105", "", 4);
+  const cs3217 = new Module("CS3217", "", 5);
+  const cs4231 = new Module("CS4231", "", 4);
+  const fms1212p = new Module("FMS1212P", "", 4);
+  academicPlan.plans[1][1].modules.push(
+    cs2105,
+    cs3217,
+    cs4231,
+    fms1212p,
+    ma3238,
+    ma3252,
+    st2132
+  );
+
+  academicPlan.checkAgainstBasket(appliedMathBasket);
 }
+
+testAppliedMathsPlan();
 
 export {};
