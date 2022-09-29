@@ -101,9 +101,38 @@ class CriterionState {
   isLastFulfilled: boolean = false;
 }
 
+abstract class CriterionEvent {}
+
+class CriterionMatchModuleEvent extends CriterionEvent {
+  module: Module;
+  constructor(module: Module) {
+    super();
+    this.module = module;
+  }
+}
+
+interface CriterionEventDelegate {
+  acceptCriterionEvent(event: CriterionEvent): void;
+}
+
 abstract class Criterion<S extends CriterionState = CriterionState> {
-  state: S;
+  declare state: S;
+  parentCriterion?: Criterion;
+  eventDelegate?: CriterionEventDelegate;
   abstract isFulfilled(academicPlan: AcademicPlanView): boolean;
+  constructor(associatedBasket?: CriterionEventDelegate) {
+    this.eventDelegate = associatedBasket;
+  }
+
+  sendEvent(event: CriterionEvent) {
+    for (
+      let current: Criterion | undefined = this;
+      current !== undefined;
+      current = current.parentCriterion
+    ) {
+      current.eventDelegate?.acceptCriterionEvent(event);
+    }
+  }
 }
 
 class TrueCriterion extends Criterion {
@@ -117,10 +146,15 @@ class ArrayCriterionState extends CriterionState {}
 class ArrayCriterion extends Criterion<ArrayCriterionState> {
   criteria: Array<Criterion<any>>;
   arrayOp: ArrayOp;
-  constructor(criteria: Array<Criterion<any>>, arrayOp: ArrayOp) {
-    super();
+  constructor(
+    criteria: Array<Criterion<any>>,
+    arrayOp: ArrayOp,
+    associatedBasket?: CriterionEventDelegate
+  ) {
+    super(associatedBasket);
     this.criteria = criteria;
     this.arrayOp = arrayOp;
+    criteria.forEach((c) => (c.parentCriterion = this));
   }
 
   isFulfilled(academicPlan: AcademicPlanView): boolean {
@@ -140,10 +174,15 @@ class ArrayCriterion extends Criterion<ArrayCriterionState> {
 class FilterCriterion extends Criterion {
   where: Filter;
   criterion: Criterion;
-  constructor(where: Filter, criterion: Criterion) {
-    super();
+  constructor(
+    where: Filter,
+    criterion: Criterion,
+    associatedBasket?: CriterionEventDelegate
+  ) {
+    super(associatedBasket);
     this.where = where;
     this.criterion = criterion;
+    criterion.parentCriterion = this;
   }
 
   isFulfilled(academicPlan: AcademicPlanView): boolean {
@@ -156,8 +195,12 @@ class FilterCriterion extends Criterion {
 class ArithmeticCriterion extends Criterion {
   binaryOp: BinaryOp;
   value: number;
-  constructor(binaryOp: BinaryOp, value: number) {
-    super();
+  constructor(
+    binaryOp: BinaryOp,
+    value: number,
+    associatedBasket?: CriterionEventDelegate
+  ) {
+    super(associatedBasket);
     this.binaryOp = binaryOp;
     this.value = value;
   }
@@ -183,8 +226,11 @@ class ArithmeticCriterion extends Criterion {
 
 class PipelineCriterion extends Criterion {
   pipeline: Array<Criterion<any> | Filter>;
-  constructor(pipeline: Array<Criterion | Filter>) {
-    super();
+  constructor(
+    pipeline: Array<Criterion | Filter>,
+    associatedBasket?: CriterionEventDelegate
+  ) {
+    super(associatedBasket);
     this.pipeline = pipeline;
   }
   isFulfilled(academicPlan: AcademicPlanView): boolean {
@@ -205,7 +251,7 @@ class PipelineCriterion extends Criterion {
 /**
  * A Basket is a collection of modules. In particular, a Basket can contain a single module
  */
-abstract class Basket {
+abstract class Basket implements CriterionEventDelegate {
   additionalCriterion?: Criterion;
   abstract getDefaultCriterion(): Criterion;
   getCriterion(): Criterion {
@@ -216,6 +262,8 @@ abstract class Basket {
         )
       : this.getDefaultCriterion();
   }
+
+  abstract acceptCriterionEvent(event: CriterionEvent): void;
 }
 
 class BasketState {
@@ -237,8 +285,15 @@ class StatefulBasket extends Basket {
   getDefaultCriterion(): Criterion {
     return new FilterCriterion(
       new PropertySetFilter("code", this.state.moduleCodesAlreadyMatched),
-      this.basket.getCriterion()
+      this.basket.getCriterion(),
+      this
     );
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    if (event instanceof CriterionMatchModuleEvent) {
+      this.state.moduleCodesAlreadyMatched.add(event.module.code);
+    }
   }
 }
 
@@ -258,8 +313,13 @@ class OrBasket extends ArrayBasket {
   getDefaultCriterion(): Criterion {
     return new ArrayCriterion(
       this.baskets.map((basket) => basket.getCriterion()),
-      ArrayOp.SOME
+      ArrayOp.SOME,
+      this
     );
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    console.log("Nothing is done so far.");
   }
 }
 
@@ -271,8 +331,13 @@ class AndBasket extends ArrayBasket {
   getDefaultCriterion(): Criterion {
     return new ArrayCriterion(
       this.baskets.map((basket) => basket.getCriterion()),
-      ArrayOp.EVERY
+      ArrayOp.EVERY,
+      this
     );
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    console.log("Nothing is done so far.");
   }
 }
 
@@ -286,8 +351,13 @@ class ModuleBasket extends Basket {
   getDefaultCriterion(): Criterion {
     return new FilterCriterion(
       new PropertyFilter("code", this.module.code),
-      new ArithmeticCriterion(BinaryOp.GT, 0)
+      new ArithmeticCriterion(BinaryOp.GT, 0),
+      this
     );
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    throw new Error("Method not implemented.");
   }
 }
 
@@ -523,7 +593,21 @@ function testAppliedMathsPlan() {
 
   const am4Basket = new OrBasket([am4ABasket, am4BBasket]);
 
-  const listState = new BasketState();
+  const listState = new BasketState(
+    new Set(
+      [
+        ma2101,
+        ma2101s,
+        ma2104,
+        ma2108,
+        ma2108s,
+        ma2213,
+        ma2216,
+        ma2116,
+        st2131,
+      ].map((mod) => mod.code)
+    )
+  );
   const am3State = new BasketState();
   const am4State = new BasketState();
 
@@ -546,7 +630,6 @@ function testAppliedMathsPlan() {
   ]);
 
   // The last part of the level 2000 basket is "Pass one additional mod from List II, III, IV"
-  // This is probably quite hard to do efficiently.
   const level2000Basket = new AndBasket([
     new OrBasket([new ModuleBasket(ma2101), new ModuleBasket(ma2101s)]),
     new ModuleBasket(ma2104),
