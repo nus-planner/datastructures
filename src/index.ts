@@ -8,8 +8,43 @@
 // Basket Relationships
 // Prereqs
 // Preclusions
-const moduleRegex = /[A-Z]+(?<codeNumber>\d)\d+[A-Z]*/;
+import path from "path";
+import * as fs from "fs";
+import util from "util";
+const packageLogFileDir = path.resolve(__dirname, "../", "logs/");
+const packageLogFilePath = path.resolve(packageLogFileDir, "log");
+function log(...data: any) {
+  console.log(
+    util.inspect(data, { showHidden: false, depth: null, colors: false })
+  );
+}
 
+function write(writeData: any, fileType: string = "txt") {
+  let data = writeData;
+  if (fileType === "txt" || fileType === "json") {
+    data = JSON.stringify(writeData) + "\n";
+  }
+  return fs.appendFileSync(`${packageLogFilePath}.${fileType}`, data);
+}
+
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key: any, value: any) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
+function writeLog(data: any) {
+  write(util.inspect(data, { showHidden: false, depth: null }));
+}
+
+const moduleRegex = /[A-Z]+(?<codeNumber>\d)\d+[A-Z]*/;
 class Module {
   code: string;
   level: number;
@@ -115,13 +150,21 @@ interface CriterionEventDelegate {
   acceptCriterionEvent(event: CriterionEvent): void;
 }
 
-abstract class Criterion<S extends CriterionState = CriterionState> {
-  declare state: S;
+export type Constructor<T> = new (...args: any) => T;
+
+abstract class Criterion {
+  state: CriterionState = new CriterionState();
   parentCriterion?: Criterion;
   eventDelegate?: CriterionEventDelegate;
   abstract isFulfilled(academicPlan: AcademicPlanView): boolean;
   constructor(associatedBasket?: CriterionEventDelegate) {
     this.eventDelegate = associatedBasket;
+  }
+
+  isFulfilledWithState(academicPlan: AcademicPlanView): boolean {
+    const fulfilled = this.isFulfilled(academicPlan);
+    this.state.isLastFulfilled = fulfilled;
+    return fulfilled;
   }
 
   sendEvent(event: CriterionEvent) {
@@ -143,11 +186,11 @@ class TrueCriterion extends Criterion {
 
 class ArrayCriterionState extends CriterionState {}
 
-class ArrayCriterion extends Criterion<ArrayCriterionState> {
-  criteria: Array<Criterion<any>>;
+class ArrayCriterion extends Criterion {
+  criteria: Array<Criterion>;
   arrayOp: ArrayOp;
   constructor(
-    criteria: Array<Criterion<any>>,
+    criteria: Array<Criterion>,
     arrayOp: ArrayOp,
     associatedBasket?: CriterionEventDelegate
   ) {
@@ -161,11 +204,11 @@ class ArrayCriterion extends Criterion<ArrayCriterionState> {
     switch (this.arrayOp) {
       case ArrayOp.EVERY:
         return this.criteria.every((criterion) =>
-          criterion.isFulfilled(academicPlan)
+          criterion.isFulfilledWithState(academicPlan)
         );
       case ArrayOp.SOME:
         return this.criteria.some((criterion) =>
-          criterion.isFulfilled(academicPlan)
+          criterion.isFulfilledWithState(academicPlan)
         );
     }
   }
@@ -186,7 +229,7 @@ class FilterCriterion extends Criterion {
   }
 
   isFulfilled(academicPlan: AcademicPlanView): boolean {
-    return this.criterion.isFulfilled(
+    return this.criterion.isFulfilledWithState(
       academicPlan.withModulesFilteredBy(this.where)
     );
   }
@@ -233,7 +276,7 @@ class ArithmeticCriterion extends Criterion {
 }
 
 class PipelineCriterion extends Criterion {
-  pipeline: Array<Criterion<any> | Filter>;
+  pipeline: Array<Criterion | Filter>;
   constructor(
     pipeline: Array<Criterion | Filter>,
     associatedBasket?: CriterionEventDelegate
@@ -260,15 +303,18 @@ class PipelineCriterion extends Criterion {
  * A Basket is a collection of modules. In particular, a Basket can contain a single module
  */
 abstract class Basket implements CriterionEventDelegate {
+  lastCriterion?: Criterion;
   additionalCriterion?: Criterion;
   abstract getDefaultCriterion(): Criterion;
   getCriterion(): Criterion {
-    return this.additionalCriterion
+    const criterion = this.additionalCriterion
       ? new ArrayCriterion(
           [this.getDefaultCriterion(), this.additionalCriterion],
           ArrayOp.EVERY
         )
       : this.getDefaultCriterion();
+    this.lastCriterion = criterion;
+    return criterion;
   }
 
   abstract acceptCriterionEvent(event: CriterionEvent): void;
@@ -450,7 +496,7 @@ class AcademicPlan {
   }
 
   checkAgainstBasket(basket: Basket): boolean {
-    return basket.getCriterion().isFulfilled(this.getPlanView());
+    return basket.getCriterion().isFulfilledWithState(this.getPlanView());
   }
 }
 
@@ -751,8 +797,8 @@ function testAppliedMathsPlan() {
     ma3252,
     st2132
   );
-
   academicPlan.checkAgainstBasket(appliedMathBasket);
+  log(appliedMathBasket);
 }
 
 testAppliedMathsPlan();
