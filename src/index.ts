@@ -83,8 +83,8 @@ class PropertyFilter<K extends keyof Module> extends Filter {
 
   filter(module: Module): boolean {
     return this.negate
-      ? module[this.propertyName] == this.equals
-      : module[this.propertyName] != this.equals;
+      ? module[this.propertyName] != this.equals
+      : module[this.propertyName] == this.equals;
   }
 }
 
@@ -259,16 +259,22 @@ class ArithmeticCriterion extends Criterion {
             this.sendEvent(new CriterionMatchModuleEvent(module));
           }
         }
+        break;
       case BinaryOp.NEQ:
         fulfilled = modules.length !== this.value;
+        break;
       case BinaryOp.GEQ:
         fulfilled = modules.length >= this.value;
+        break;
       case BinaryOp.GT:
         fulfilled = modules.length > this.value;
+        break;
       case BinaryOp.LEQ:
         fulfilled = modules.length <= this.value;
+        break;
       case BinaryOp.LT:
         fulfilled = modules.length < this.value;
+        break;
     }
 
     return fulfilled;
