@@ -330,7 +330,7 @@ class OrBasket extends ArrayBasket {
     console.log("Nothing is done so far.");
   }
 }
-class NOfBasket extends ArrayBasket {
+class AtLeastNOfBasket extends ArrayBasket {
   n: number;
   constructor(n: number, baskets: Array<Basket>) {
     super(baskets);
@@ -827,12 +827,12 @@ function testCS2019Plan() {
 
   // This probably needs to be a stateful basket or something to prevent doublecounting?
   const csSWEFocusAreaPrimaries = new AndBasket([
-    new NOfBasket(1, [
+    new AtLeastNOfBasket(1, [
       new ModuleBasket(cs4211),
       new ModuleBasket(cs4218),
       new ModuleBasket(cs4239),
     ]),
-    new NOfBasket(2, [
+    new AtLeastNOfBasket(2, [
       new ModuleBasket(cs2103t),
       new ModuleBasket(cs3213),
       new ModuleBasket(cs3319),
@@ -844,7 +844,9 @@ function testCS2019Plan() {
 
   // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
   // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
-  const csBreadthAndDepthBasket = new NOfBasket(1, [csSWEFocusAreaPrimaries]);
+  const csBreadthAndDepthBasket = new AtLeastNOfBasket(1, [
+    csSWEFocusAreaPrimaries,
+  ]);
 
   // CS team project
   const cs3216 = new Module("CS3216", "", 5);
