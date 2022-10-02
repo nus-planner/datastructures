@@ -149,7 +149,7 @@ class ArrayCriterion extends Criterion<ArrayCriterionState> {
   constructor(
     criteria: Array<Criterion<any>>,
     arrayOp: ArrayOp,
-    associatedBasket?: CriterionEventDelegate
+    associatedBasket?: CriterionEventDelegate,
   ) {
     super(associatedBasket);
     this.criteria = criteria;
@@ -161,11 +161,11 @@ class ArrayCriterion extends Criterion<ArrayCriterionState> {
     switch (this.arrayOp) {
       case ArrayOp.EVERY:
         return this.criteria.every((criterion) =>
-          criterion.isFulfilled(academicPlan)
+          criterion.isFulfilled(academicPlan),
         );
       case ArrayOp.SOME:
         return this.criteria.some((criterion) =>
-          criterion.isFulfilled(academicPlan)
+          criterion.isFulfilled(academicPlan),
         );
     }
   }
@@ -177,7 +177,7 @@ class FilterCriterion extends Criterion {
   constructor(
     where: Filter,
     criterion: Criterion,
-    associatedBasket?: CriterionEventDelegate
+    associatedBasket?: CriterionEventDelegate,
   ) {
     super(associatedBasket);
     this.where = where;
@@ -187,7 +187,7 @@ class FilterCriterion extends Criterion {
 
   isFulfilled(academicPlan: AcademicPlanView): boolean {
     return this.criterion.isFulfilled(
-      academicPlan.withModulesFilteredBy(this.where)
+      academicPlan.withModulesFilteredBy(this.where),
     );
   }
 }
@@ -198,7 +198,7 @@ class ArithmeticCriterion extends Criterion {
   constructor(
     binaryOp: BinaryOp,
     value: number,
-    associatedBasket?: CriterionEventDelegate
+    associatedBasket?: CriterionEventDelegate,
   ) {
     super(associatedBasket);
     this.binaryOp = binaryOp;
@@ -236,7 +236,7 @@ class PipelineCriterion extends Criterion {
   pipeline: Array<Criterion<any> | Filter>;
   constructor(
     pipeline: Array<Criterion | Filter>,
-    associatedBasket?: CriterionEventDelegate
+    associatedBasket?: CriterionEventDelegate,
   ) {
     super(associatedBasket);
     this.pipeline = pipeline;
@@ -266,7 +266,7 @@ abstract class Basket implements CriterionEventDelegate {
     return this.additionalCriterion
       ? new ArrayCriterion(
           [this.getDefaultCriterion(), this.additionalCriterion],
-          ArrayOp.EVERY
+          ArrayOp.EVERY,
         )
       : this.getDefaultCriterion();
   }
@@ -294,7 +294,7 @@ class StatefulBasket extends Basket {
     return new FilterCriterion(
       new PropertySetFilter("code", this.state.moduleCodesAlreadyMatched),
       this.basket.getCriterion(),
-      this
+      this,
     );
   }
 
@@ -322,7 +322,7 @@ class OrBasket extends ArrayBasket {
     return new ArrayCriterion(
       this.baskets.map((basket) => basket.getCriterion()),
       ArrayOp.SOME,
-      this
+      this,
     );
   }
 
@@ -340,7 +340,7 @@ class AndBasket extends ArrayBasket {
     return new ArrayCriterion(
       this.baskets.map((basket) => basket.getCriterion()),
       ArrayOp.EVERY,
-      this
+      this,
     );
   }
 
@@ -360,7 +360,7 @@ class ModuleBasket extends Basket {
     return new FilterCriterion(
       new PropertyFilter("code", this.module.code),
       new ArithmeticCriterion(BinaryOp.GT, 0),
-      this
+      this,
     );
   }
 
@@ -412,7 +412,7 @@ class AcademicPlanView {
   withOriginalPlan(): AcademicPlanView {
     return new AcademicPlanView(
       this.academicPlan,
-      this.academicPlan.getModules()
+      this.academicPlan.getModules(),
     );
   }
 }
@@ -547,7 +547,7 @@ function testAppliedMathsPlan() {
       new ModuleBasket(pc2132),
       new ModuleBasket(st2132),
       new ModuleBasket(ec2101),
-    ])
+    ]),
   );
 
   const listIIIBasket = new OrBasket([
@@ -617,8 +617,8 @@ function testAppliedMathsPlan() {
         ma2216,
         ma2116,
         st2131,
-      ].map((mod) => mod.code)
-    )
+      ].map((mod) => mod.code),
+    ),
   );
   const am3State = new BasketState();
   const am4State = new BasketState();
@@ -702,7 +702,7 @@ function testAppliedMathsPlan() {
     get1031,
     ma1101r,
     ma1102r,
-    pc1141
+    pc1141,
   );
 
   const cs2100 = new Module("CS2100", "", 4);
@@ -718,7 +718,7 @@ function testAppliedMathsPlan() {
     ma2101,
     ma2104,
     ma2108s,
-    st2131
+    st2131,
   );
 
   const cs2101 = new Module("CS2101", "", 4);
@@ -735,7 +735,7 @@ function testAppliedMathsPlan() {
     cs3231,
     geh1036,
     ma2202,
-    ma3210
+    ma3210,
   );
 
   const cs2105 = new Module("CS2105", "", 4);
@@ -749,10 +749,101 @@ function testAppliedMathsPlan() {
     fms1212p,
     ma3238,
     ma3252,
-    st2132
+    st2132,
   );
 
   academicPlan.checkAgainstBasket(appliedMathBasket);
+}
+
+function testCS2019Plan() {
+  // ULR
+  const gehxxxx = new Module("GEHXXXX", "", 4);
+  const geqxxxx = new Module("GEHXXXX", "", 4);
+  const gerxxxx = new Module("GEHXXXX", "", 4);
+  const gesxxxx = new Module("GEHXXXX", "", 4);
+  const getxxxx = new Module("GEHXXXX", "", 4);
+
+  const ulrBasket = new AndBasket([
+    new ModuleBasket(gehxxxx),
+    new ModuleBasket(geqxxxx),
+    new ModuleBasket(gerxxxx),
+    new ModuleBasket(gesxxxx),
+    new ModuleBasket(getxxxx),
+  ]);
+
+  // CS Foundation
+  const cs1101s = new Module("CS1101S", "", 4);
+  const cs1010x = new Module("CS1010X", "", 4);
+  const cs1231s = new Module("CS1231s", "", 4);
+  const cs2030s = new Module("CS2030s", "", 4);
+  const cs2040s = new Module("CS2040s", "", 4);
+  const cs2100 = new Module("CS2100", "", 4);
+  const cs2103t = new Module("CS2103T", "", 4);
+  const cs2105 = new Module("CS2105", "", 4);
+  const cs2106 = new Module("CS2106", "", 4);
+  const cs3230 = new Module("CS3230", "", 4);
+
+  const csFoundationBasket = new AndBasket([
+    new OrBasket([new ModuleBasket(cs1101s), new ModuleBasket(cs1010x)]),
+    new AndBasket([
+      new ModuleBasket(cs1231s),
+      new ModuleBasket(cs2030s),
+      new ModuleBasket(cs2040s),
+      new ModuleBasket(cs2100),
+      new ModuleBasket(cs2103t),
+      new ModuleBasket(cs2105),
+      new ModuleBasket(cs2106),
+      new ModuleBasket(cs3230),
+    ]),
+  ]);
+
+  // CS breadth & depth
+
+  // CS team project
+  const cs3216 = new Module("CS3216", "", 5);
+  const cs3217 = new Module("CS3217", "", 5);
+  const cs3281 = new Module("CS3281", "", 4);
+  const cs3282 = new Module("CS3282", "", 4);
+  const cs3203 = new Module("CS3203", "", 8);
+
+  const csTeamProjectBasket = new OrBasket([
+    new ModuleBasket(cs3203),
+    new AndBasket([new ModuleBasket(cs3216), new ModuleBasket(cs3217)]),
+    new AndBasket([new ModuleBasket(cs3281), new ModuleBasket(cs3282)]),
+  ]);
+
+  // IT professionalism
+  const is1103 = new Module("IS1103", "", 4);
+  const is1108 = new Module("IS1108", "", 4);
+  const cs2101 = new Module("CS2101", "", 4);
+  const es2660 = new Module("ES2660", "", 4);
+
+  const csItProfessionalismBasket = new AndBasket([
+    new OrBasket([new ModuleBasket(is1103), new ModuleBasket(is1108)]),
+    new ModuleBasket(cs2101),
+    new ModuleBasket(es2660),
+  ]);
+
+  // math
+  const ma1101r = new Module("MA1101R", "", 4);
+  const ma1521 = new Module("MA1521", "", 4);
+  const st2131 = new Module("ST2131", "", 4);
+  const st2132 = new Module("ST2132", "", 4);
+  const st2334 = new Module("ST2334", "", 4);
+
+  // sci mods
+  // TODO: Fill this list up
+  const pc1221 = new Module("PC1221", "", 4);
+
+  const csMathAndSci = new AndBasket([
+    new OrBasket([
+      new AndBasket([new ModuleBasket(is1103), new ModuleBasket(is1108)]),
+      new ModuleBasket(st2334),
+    ]),
+    new ModuleBasket(ma1101r),
+    new ModuleBasket(ma1521),
+    new OrBasket([new ModuleBasket(pc1221)]),
+  ]);
 }
 
 testAppliedMathsPlan();
