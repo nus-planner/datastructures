@@ -330,6 +330,21 @@ class OrBasket extends ArrayBasket {
     console.log("Nothing is done so far.");
   }
 }
+class NOfBasket extends ArrayBasket {
+  n: number;
+  constructor(n: number, baskets: Array<Basket>) {
+    super(baskets);
+    this.n = n;
+  }
+
+  getDefaultCriterion(): Criterion {
+    return new ArithmeticCriterion(BinaryOp.GEQ, this.n, this);
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    console.log("Nothing is done so far.");
+  }
+}
 
 class AndBasket extends ArrayBasket {
   constructor(baskets: Array<Basket>) {
@@ -798,6 +813,38 @@ function testCS2019Plan() {
   ]);
 
   // CS breadth & depth
+  /**
+   * Satisfy at least one CS Focus Area for BComp(CS) by completing 3 modules in the Area Primaries, with at least one module at level-4000 or above.
+   * Computer Science Foundation modules that appear in Area Primaries can be counted as one of the 3 modules towards satisfying a Focus Area.
+   * At least 12 MCs are at level-4000 or above.
+   */
+
+  const cs3213 = new Module("CS3213", "", 4);
+  const cs3319 = new Module("CS3319", "", 4);
+  const cs4211 = new Module("CS4211", "", 4);
+  const cs4218 = new Module("CS4218", "", 4);
+  const cs4239 = new Module("CS4239", "", 4);
+
+  // This probably needs to be a stateful basket or something to prevent doublecounting?
+  const csSWEFocusAreaPrimaries = new AndBasket([
+    new NOfBasket(1, [
+      new ModuleBasket(cs4211),
+      new ModuleBasket(cs4218),
+      new ModuleBasket(cs4239),
+    ]),
+    new NOfBasket(2, [
+      new ModuleBasket(cs2103t),
+      new ModuleBasket(cs3213),
+      new ModuleBasket(cs3319),
+      new ModuleBasket(cs4211),
+      new ModuleBasket(cs4218),
+      new ModuleBasket(cs4239),
+    ]),
+  ]);
+
+  // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
+  // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
+  const csBreadthAndDepthBasket = new NOfBasket(1, [csSWEFocusAreaPrimaries]);
 
   // CS team project
   const cs3216 = new Module("CS3216", "", 5);
@@ -824,6 +871,23 @@ function testCS2019Plan() {
     new ModuleBasket(es2660),
   ]);
 
+  // industry exp
+  const cp3880 = new Module("CP3880", "", 12);
+  const cp3200 = new Module("CP3200", "", 6);
+  const cp3202 = new Module("CP3202", "", 6);
+  const cp3107 = new Module("CP3107", "", 6);
+  const cp3110 = new Module("CP3110", "", 6);
+  const is4010 = new Module("IS4010", "", 12);
+  const tr3203 = new Module("TR3202", "", 12);
+
+  const csIndustryExpBasket = new OrBasket([
+    new ModuleBasket(cp3880),
+    new OrBasket([new ModuleBasket(cp3200), new ModuleBasket(cp3202)]),
+    new OrBasket([new ModuleBasket(cp3107), new ModuleBasket(cp3110)]),
+    new ModuleBasket(is4010),
+    new ModuleBasket(tr3203),
+  ]);
+
   // math
   const ma1101r = new Module("MA1101R", "", 4);
   const ma1521 = new Module("MA1521", "", 4);
@@ -835,7 +899,7 @@ function testCS2019Plan() {
   // TODO: Fill this list up
   const pc1221 = new Module("PC1221", "", 4);
 
-  const csMathAndSci = new AndBasket([
+  const csMathAndSciBasket = new AndBasket([
     new OrBasket([
       new AndBasket([new ModuleBasket(is1103), new ModuleBasket(is1108)]),
       new ModuleBasket(st2334),
@@ -843,6 +907,14 @@ function testCS2019Plan() {
     new ModuleBasket(ma1101r),
     new ModuleBasket(ma1521),
     new OrBasket([new ModuleBasket(pc1221)]),
+  ]);
+
+  const csDegree = new AndBasket([
+    ulrBasket,
+    csFoundationBasket,
+    csTeamProjectBasket,
+    csItProfessionalismBasket,
+    csMathAndSciBasket,
   ]);
 }
 
