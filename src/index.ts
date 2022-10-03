@@ -130,10 +130,21 @@ enum BinaryOp {
 enum ArrayOp {
   EVERY,
   SOME,
+  AT_LEAST_N,
+}
+
+class CriterionFulfillmentResult {
+  isFulfilled: boolean;
+  matchedMCs: number;
+
+  constructor(isFulfilled: boolean = false, matchedMCs: number = 0) {
+    this.isFulfilled = isFulfilled;
+    this.matchedMCs = matchedMCs;
+  }
 }
 
 class CriterionState {
-  isLastFulfilled: boolean = false;
+  lastResult: CriterionFulfillmentResult = new CriterionFulfillmentResult();
 }
 
 abstract class CriterionEvent {}
@@ -156,14 +167,18 @@ abstract class Criterion {
   state: CriterionState = new CriterionState();
   parentCriterion?: Criterion;
   eventDelegate?: CriterionEventDelegate;
-  abstract isFulfilled(academicPlan: AcademicPlanView): boolean;
+  abstract isFulfilled(
+    academicPlan: AcademicPlanView,
+  ): CriterionFulfillmentResult;
   constructor(associatedBasket?: CriterionEventDelegate) {
     this.eventDelegate = associatedBasket;
   }
 
-  isFulfilledWithState(academicPlan: AcademicPlanView): boolean {
+  isFulfilledWithState(
+    academicPlan: AcademicPlanView,
+  ): CriterionFulfillmentResult {
     const fulfilled = this.isFulfilled(academicPlan);
-    this.state.isLastFulfilled = fulfilled;
+    this.state.lastResult = fulfilled;
     return fulfilled;
   }
 
@@ -178,39 +193,70 @@ abstract class Criterion {
   }
 }
 
-class TrueCriterion extends Criterion {
-  isFulfilled(academicPlan: AcademicPlanView): boolean {
-    return true;
-  }
-}
-
 class ArrayCriterionState extends CriterionState {}
+
+interface ArrayCriterionOptions {
+  n: number; // At least n
+}
 
 class ArrayCriterion extends Criterion {
   criteria: Array<Criterion>;
   arrayOp: ArrayOp;
+  n?: number; // can be refactored to an options object
   constructor(
     criteria: Array<Criterion>,
     arrayOp: ArrayOp,
     associatedBasket?: CriterionEventDelegate,
+    options: Partial<ArrayCriterionOptions> = {},
   ) {
     super(associatedBasket);
     this.criteria = criteria;
     this.arrayOp = arrayOp;
+    if (this.arrayOp === ArrayOp.AT_LEAST_N) {
+      if (options.n === undefined) {
+        throw new Error("n should be provided");
+      }
+      this.n = options.n;
+    }
     criteria.forEach((c) => (c.parentCriterion = this));
   }
 
-  isFulfilled(academicPlan: AcademicPlanView): boolean {
+  isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
+    let isFulfilled;
     switch (this.arrayOp) {
       case ArrayOp.EVERY:
-        return this.criteria.every((criterion) =>
-          criterion.isFulfilledWithState(academicPlan),
+        isFulfilled = this.criteria.every(
+          (criterion) =>
+            criterion.isFulfilledWithState(academicPlan).isFulfilled,
         );
+        break;
       case ArrayOp.SOME:
-        return this.criteria.some((criterion) =>
-          criterion.isFulfilledWithState(academicPlan),
+        isFulfilled = this.criteria.some(
+          (criterion) =>
+            criterion.isFulfilledWithState(academicPlan).isFulfilled,
         );
+        break;
+      case ArrayOp.AT_LEAST_N:
+        if (this.n === undefined) {
+          throw new Error("n should be defined");
+        }
+        let fulfilledCount = 0;
+        for (let criterion of this.criteria) {
+          if (!criterion.isFulfilledWithState(academicPlan).isFulfilled) {
+            continue;
+          }
+          fulfilledCount++;
+          if (fulfilledCount >= this.n) {
+            break;
+          }
+        }
     }
+    return new CriterionFulfillmentResult(
+      isFulfilled,
+      this.criteria
+        .map((c) => c.state.lastResult.matchedMCs)
+        .reduce((prev, cur) => prev + cur, 0),
+    );
   }
 }
 
@@ -228,7 +274,7 @@ class FilterCriterion extends Criterion {
     criterion.parentCriterion = this;
   }
 
-  isFulfilled(academicPlan: AcademicPlanView): boolean {
+  isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
     return this.criterion.isFulfilledWithState(
       academicPlan.withModulesFilteredBy(this.where),
     );
@@ -248,7 +294,7 @@ class ArithmeticCriterion extends Criterion {
     this.value = value;
   }
 
-  isFulfilled(academicPlan: AcademicPlanView): boolean {
+  isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
     const modules = academicPlan.modules;
     let fulfilled: boolean;
     switch (this.binaryOp) {
@@ -259,6 +305,7 @@ class ArithmeticCriterion extends Criterion {
             this.sendEvent(new CriterionMatchModuleEvent(module));
           }
         }
+
         break;
       case BinaryOp.NEQ:
         fulfilled = modules.length !== this.value;
@@ -276,34 +323,67 @@ class ArithmeticCriterion extends Criterion {
         fulfilled = modules.length < this.value;
         break;
     }
-
-    return fulfilled;
+    return fulfilled
+      ? new CriterionFulfillmentResult(true, modules.length)
+      : new CriterionFulfillmentResult();
   }
 }
 
-class PipelineCriterion extends Criterion {
-  pipeline: Array<Criterion | Filter>;
+class CriterionFulfillmentCriterion extends Criterion {
+  criterion: Criterion;
+  predicate: (result: CriterionFulfillmentResult) => boolean;
   constructor(
-    pipeline: Array<Criterion | Filter>,
-    associatedBasket?: CriterionEventDelegate,
+    criterion: Criterion,
+    predicate: typeof CriterionFulfillmentCriterion.prototype.predicate,
   ) {
-    super(associatedBasket);
-    this.pipeline = pipeline;
+    super();
+    this.criterion = criterion;
+    this.predicate = predicate;
   }
-  isFulfilled(academicPlan: AcademicPlanView): boolean {
-    let modules = academicPlan.getModules();
-    for (const item of this.pipeline) {
-      if (item instanceof Filter) {
-        modules = modules.filter(item.getFilter());
-      } else if (item instanceof Criterion) {
-        if (!item.isFulfilled(academicPlan)) {
-          return false;
-        }
-      }
+
+  static atLeastNMCs(
+    criterion: Criterion,
+    numMCs: number,
+  ): CriterionFulfillmentCriterion {
+    return new CriterionFulfillmentCriterion(
+      criterion,
+      (result) => result.matchedMCs > numMCs,
+    );
+  }
+
+  isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
+    const fulfilled = this.criterion.isFulfilled(academicPlan);
+    if (!fulfilled.isFulfilled || !this.predicate(fulfilled)) {
+      return new CriterionFulfillmentResult();
+    } else {
+      return fulfilled;
     }
-    return true;
   }
 }
+
+// class PipelineCriterion extends Criterion {
+//   pipeline: Array<Criterion | Filter>;
+//   constructor(
+//     pipeline: Array<Criterion | Filter>,
+//     associatedBasket?: CriterionEventDelegate,
+//   ) {
+//     super(associatedBasket);
+//     this.pipeline = pipeline;
+//   }
+//   isFulfilled(academicPlan: AcademicPlanView): boolean {
+//     let modules = academicPlan.getModules();
+//     for (const item of this.pipeline) {
+//       if (item instanceof Filter) {
+//         modules = modules.filter(item.getFilter());
+//       } else if (item instanceof Criterion) {
+//         if (!item.isFulfilled(academicPlan)) {
+//           return false;
+//         }
+//       }
+//     }
+//     return true;
+//   }
+// }
 
 /**
  * A Basket is a collection of modules. In particular, a Basket can contain a single module
@@ -390,7 +470,14 @@ class AtLeastNOfBasket extends ArrayBasket {
   }
 
   getDefaultCriterion(): Criterion {
-    return new ArithmeticCriterion(BinaryOp.GEQ, this.n, this);
+    return new ArrayCriterion(
+      this.baskets.map((basket) => basket.getCriterion()),
+      ArrayOp.AT_LEAST_N,
+      this,
+      {
+        n: this.n,
+      },
+    );
   }
 
   acceptCriterionEvent(event: CriterionEvent): void {
@@ -408,6 +495,27 @@ class AndBasket extends ArrayBasket {
       this.baskets.map((basket) => basket.getCriterion()),
       ArrayOp.EVERY,
       this,
+    );
+  }
+
+  acceptCriterionEvent(event: CriterionEvent): void {
+    console.log("Nothing is done so far.");
+  }
+}
+
+class NMCsBasket extends Basket {
+  numMCs: number;
+  basket: Basket;
+  constructor(numMCs: number, basket: Basket) {
+    super();
+    this.numMCs = numMCs;
+    this.basket = basket;
+  }
+
+  getDefaultCriterion(): Criterion {
+    return CriterionFulfillmentCriterion.atLeastNMCs(
+      this.basket.getCriterion(),
+      this.numMCs,
     );
   }
 
@@ -517,7 +625,8 @@ class AcademicPlan {
   }
 
   checkAgainstBasket(basket: Basket): boolean {
-    return basket.getCriterion().isFulfilledWithState(this.getPlanView());
+    return basket.getCriterion().isFulfilledWithState(this.getPlanView())
+      .isFulfilled;
   }
 }
 
@@ -896,9 +1005,16 @@ function testCS2019Plan() {
 
   // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
   // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
-  const csBreadthAndDepthBasket = new AtLeastNOfBasket(1, [
-    csSWEFocusAreaPrimaries,
-  ]);
+  const csBreadthAndDepthBasket = new NMCsBasket(
+    24,
+    new StatefulBasket(
+      new AndBasket([
+        new AtLeastNOfBasket(1, [csSWEFocusAreaPrimaries]),
+        /* Basket of all CS 4k mods */
+      ]),
+    ),
+    new StatefulBasket(/* All CS coded modules */),
+  );
 
   // CS team project
   const cs3216 = new Module("CS3216", "", 5);
