@@ -919,10 +919,14 @@ function testCS2019Plan() {
         csBreadthAndDepthState,
       ),
       new StatefulBasket(
-        [
-          /* All CS coded modules */
-        ],
-        csBreadthAndDepthState,
+        new ModuleBasket(
+          new Module(
+            "TODO",
+            "We need a new kind of basket to capture the idea of all cs modules. Set this as ModuleBasket for now to remove TypeErrors",
+            4,
+          ),
+        ),
+        /* All CS coded modules */ csBreadthAndDepthState,
       ),
     ]),
   );
@@ -936,7 +940,5 @@ function testCS2019Plan() {
     csMathAndSciBasket,
   ]);
 }
-
-testAppliedMathsPlan();
 
 export {};

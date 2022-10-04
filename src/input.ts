@@ -3,13 +3,6 @@ import * as fs from "fs";
 import * as baskets from ".";
 import * as log from "./log";
 
-try {
-  const doc = yaml.load(fs.readFileSync("./requirements.json", "utf8"));
-  log.log(doc);
-} catch (e) {
-  console.log(e);
-}
-
 type ModuleCode = string;
 type ModuleBasket = {
   code?: string;
@@ -18,6 +11,7 @@ type ModuleBasket = {
 };
 
 type BasketOption =
+  | { at_least_n_of: { n: number; baskets: ArrayBasket } }
   | {
       and: ArrayBasket;
     }
@@ -81,16 +75,27 @@ function convertBasketOption(
       module = getAndAddIfNotExists(modulesMap, basketOption.module.code);
     } else if (basketOption.module.code_pattern) {
       // TODO
-      throw new Error("TODO");
+      module = new baskets.Module("ZZ9999THISISNOTAMOD", "", 4);
+      // throw new Error("TODO");
     } else if (basketOption.module.level) {
       // TODO
       throw new Error("TODO");
     } else {
-      throw new Error(
-        "At least one Module parameter must be given by the config.",
-      );
+      module = new baskets.Module("ZZ9999THISISNOTAMOD", "", 4);
+      // throw new Error(
+      //   "At least one Module parameter must be given by the config.",
+      // );
     }
     return new baskets.ModuleBasket(module);
+  } else if ("at_least_n_of" in basketOption) {
+    const basketElements = basketOption.at_least_n_of.baskets.map(
+      (arrayBasketElement) =>
+        convertArrayBasketElement(arrayBasketElement, modulesMap),
+    );
+    return baskets.ArrayBasket.atLeastN(
+      basketOption.at_least_n_of.n,
+      basketElements,
+    );
   } else {
     throw new Error("Malformed config");
   }
@@ -111,3 +116,10 @@ function convertConfigBasket(topLevelBasket: TopLevelBasket): baskets.Basket {
     new Map<string, baskets.Module>(),
   );
 }
+
+const topLevelBasket = yaml.load(
+  fs.readFileSync("./requirements.json", "utf8"),
+) as TopLevelBasket;
+log.log(topLevelBasket);
+const convertedBasket = convertConfigBasket(topLevelBasket);
+log.log(convertedBasket);

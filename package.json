@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
+    "input": "ts-node src/input.ts",
     "windows-debug": "Powershell.exe -File .\\scripts\\Debug.ps1",
     "convert": "json2yaml requirements.json > requirements.yaml",
     "test": "echo \"Error: no test specified\" && exit 1"
