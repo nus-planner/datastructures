@@ -980,42 +980,6 @@ function testCS2019Plan() {
    * At least 12 MCs are at level-4000 or above.
    */
 
-  const cs3213 = new Module("CS3213", "", 4);
-  const cs3319 = new Module("CS3319", "", 4);
-  const cs4211 = new Module("CS4211", "", 4);
-  const cs4218 = new Module("CS4218", "", 4);
-  const cs4239 = new Module("CS4239", "", 4);
-
-  // This probably needs to be a stateful basket or something to prevent doublecounting?
-  const csSWEFocusAreaPrimaries = new AndBasket([
-    new AtLeastNOfBasket(1, [
-      new ModuleBasket(cs4211),
-      new ModuleBasket(cs4218),
-      new ModuleBasket(cs4239),
-    ]),
-    new AtLeastNOfBasket(2, [
-      new ModuleBasket(cs2103t),
-      new ModuleBasket(cs3213),
-      new ModuleBasket(cs3319),
-      new ModuleBasket(cs4211),
-      new ModuleBasket(cs4218),
-      new ModuleBasket(cs4239),
-    ]),
-  ]);
-
-  // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
-  // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
-  const csBreadthAndDepthBasket = new NMCsBasket(
-    24,
-    new StatefulBasket(
-      new AndBasket([
-        new AtLeastNOfBasket(1, [csSWEFocusAreaPrimaries]),
-        /* Basket of all CS 4k mods */
-      ]),
-    ),
-    new StatefulBasket(/* All CS coded modules */),
-  );
-
   // CS team project
   const cs3216 = new Module("CS3216", "", 5);
   const cs3217 = new Module("CS3217", "", 5);
@@ -1071,7 +1035,7 @@ function testCS2019Plan() {
 
   const csMathAndSciBasket = new AndBasket([
     new OrBasket([
-      new AndBasket([new ModuleBasket(is1103), new ModuleBasket(is1108)]),
+      new AndBasket([new ModuleBasket(st2131), new ModuleBasket(st2132)]),
       new ModuleBasket(st2334),
     ]),
     new ModuleBasket(ma1101r),
@@ -1079,9 +1043,63 @@ function testCS2019Plan() {
     new OrBasket([new ModuleBasket(pc1221)]),
   ]);
 
+  // SWE Focus Area
+  const cs3213 = new Module("CS3213", "", 4);
+  const cs3219 = new Module("CS3219", "", 4);
+  const cs4211 = new Module("CS4211", "", 4);
+  const cs4218 = new Module("CS4218", "", 4);
+  const cs4239 = new Module("CS4239", "", 4);
+  const csSWEFABasketState = new BasketState();
+
+  // This probably needs to be a stateful basket or something to prevent doublecounting?
+  const csSWEFocusAreaPrimaries = new AtLeastNOfBasket(3, [
+    new StatefulBasket(
+      new AtLeastNOfBasket(1, [
+        new ModuleBasket(cs4211),
+        new ModuleBasket(cs4218),
+        new ModuleBasket(cs4239),
+      ]),
+      csSWEFABasketState,
+    ),
+    new StatefulBasket(
+      new AtLeastNOfBasket(2, [
+        new ModuleBasket(cs2103t),
+        new ModuleBasket(cs3213),
+        new ModuleBasket(cs3219),
+        new ModuleBasket(cs4211),
+        new ModuleBasket(cs4218),
+        new ModuleBasket(cs4239),
+      ]),
+      csSWEFABasketState,
+    ),
+  ]);
+
+  // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
+  // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
+  const csBreadthAndDepthState = new BasketState();
+  const csBreadthAndDepthBasket = new NMCsBasket(
+    24,
+    new AndBasket([
+      new StatefulBasket(
+        new OrBasket([
+          csSWEFocusAreaPrimaries,
+          /* other focus area primaries */
+        ]),
+        csBreadthAndDepthState,
+      ),
+      new StatefulBasket(
+        [
+          /* All CS coded modules */
+        ],
+        csBreadthAndDepthState,
+      ),
+    ]),
+  );
+
   const csDegree = new AndBasket([
     ulrBasket,
     csFoundationBasket,
+    csBreadthAndDepthBasket,
     csTeamProjectBasket,
     csItProfessionalismBasket,
     csMathAndSciBasket,
