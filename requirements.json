@@ -1,0 +1,126 @@
+{
+  "CS-2019": {
+    "and": [
+      {
+        "url": {
+          "description": "University Level Requirements",
+          "and": [
+            {
+              "geh": {
+                "description": "GEH modules",
+                "module": {
+                  "code_pattern": "^GEH"
+                }
+              }
+            },
+            "GEQ1000",
+            "GER1000",
+            {
+              "ges": {
+                "description": "GES modules",
+                "module": {
+                  "code_pattern": "^GES"
+                }
+              }
+            },
+            {
+              "get": {
+                "module": {
+                  "code_pattern": "^GET"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "cs_foundation": {
+          "description": "CS foundation",
+          "and": [
+            {
+              "cs1010": {
+                "description": "CS1010 variants",
+                "or": ["CS1101S", "CS1010X"]
+              }
+            },
+            "CS1231S",
+            "CS2030S",
+            "CS2040S",
+            "CS2100",
+            "CS2103T",
+            "CS2105",
+            "CS2106",
+            "CS3230"
+          ]
+        }
+      },
+      {
+        "cs_breadth_and_depth": {
+          "TODO": "StatefulBasket",
+          "at_least_n_mcs": 24,
+          "and": [
+            {
+              "swe_focus_area_primaries": {
+                "and": [
+                  {
+                    "4k": {
+                      "at_least_n_of": {
+                        "n": 1,
+                        "items": ["CS4211", "CS4218", "CS4239"]
+                      }
+                    }
+                  },
+                  {
+                    "Others": {
+                      "at_least_n_of": {
+                        "n": 2,
+                        "baskets": [
+                          "CS2103T",
+                          "CS3213",
+                          "CS3219",
+                          "CS4211",
+                          "CS4218",
+                          "CS4239"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "cs_team_project": {
+          "or": [
+            "CS3203",
+            {
+              "CS3216/17 combo": {
+                "and": ["CS3216", "CS3217"]
+              }
+            },
+            {
+              "CS3281/82 combo": {
+                "and": ["CS3281", "CS3282"]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "it_professionalism": {
+          "and": [
+            {
+              "": {
+                "or": ["IS1103", "IS1108"]
+              }
+            },
+            "CS2101",
+            "ES2660"
+          ]
+        }
+      }
+    ]
+  }
+}

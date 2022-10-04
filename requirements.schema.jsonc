@@ -1,0 +1,84 @@
+{
+  "type": "object",
+  "patternProperties": {
+    "^.*$": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "and": {
+              "description": "All of these baskets must be fulfilled",
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  { "type": "string" },
+                  { "type": "object", "$ref": "#" }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "or": {
+              "description": "At least one of these baskets must be fulfilled",
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  { "type": "string" },
+                  { "type": "object", "$ref": "#" }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "at_least_n_of": {
+              "description": "At least n of these baskets must be fulfilled",
+              "type": "object",
+              "properties": {
+                "n": {
+                  "type": "number"
+                },
+                "baskets": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      { "type": "string" },
+                      { "type": "object", "$ref": "#" }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "module": {
+              "description": "Either a single Module or several modules by some kind of filter",
+              "properties": {
+                "code": {
+                  "description": "Module code",
+                  "type": "string"
+                },
+                "code_pattern": {
+                  "desription": "Regex filter of module code",
+                  "type": "string"
+                },
+                "level": {
+                  "description": "Level filter",
+                  "enum": [1000, 2000, 3000, 4000, 5000, 6000]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

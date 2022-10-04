@@ -8,48 +8,14 @@
 // Basket Relationships
 // Prereqs
 // Preclusions
-import path from "path";
-import * as fs from "fs";
-import util from "util";
-const packageLogFileDir = path.resolve(__dirname, "../", "logs/");
-const packageLogFilePath = path.resolve(packageLogFileDir, "log");
-function log(...data: any) {
-  console.log(
-    util.inspect(data, { showHidden: false, depth: null, colors: false }),
-  );
-}
-
-function write(writeData: any, fileType: string = "txt") {
-  let data = writeData;
-  if (fileType === "txt" || fileType === "json") {
-    data = JSON.stringify(writeData) + "\n";
-  }
-  return fs.appendFileSync(`${packageLogFilePath}.${fileType}`, data);
-}
-
-const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key: any, value: any) => {
-    if (typeof value === "object" && value !== null) {
-      if (seen.has(value)) {
-        return;
-      }
-      seen.add(value);
-    }
-    return value;
-  };
-};
-
-function writeLog(data: any) {
-  write(util.inspect(data, { showHidden: false, depth: null }));
-}
+import * as log from "./log";
 
 const moduleRegex = /[A-Z]+(?<codeNumber>\d)\d+[A-Z]*/;
 
-class ModuleState {
+export class ModuleState {
   matchedBaskets: Array<Basket> = [];
 }
-class Module {
+export class Module {
   state: ModuleState = new ModuleState();
   code: string;
   level: number;
@@ -71,7 +37,7 @@ class Module {
   }
 }
 
-abstract class Filter {
+export abstract class Filter {
   abstract filter(module: Module): boolean;
 
   getFilter() {
@@ -168,7 +134,7 @@ interface CriterionEventDelegate {
 
 export type Constructor<T> = new (...args: any) => T;
 
-interface Criterion {
+export interface Criterion {
   criterionState: CriterionState;
   eventDelegate?: CriterionEventDelegate;
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult;
@@ -178,7 +144,7 @@ interface Criterion {
  * A Basket is a collection of modules. In particular, a Basket can contain a single module
  */
 
-abstract class Basket implements Criterion, CriterionEventDelegate {
+export abstract class Basket implements Criterion, CriterionEventDelegate {
   criterionState: CriterionState = new CriterionState();
   parentBasket?: Basket;
 
@@ -225,7 +191,7 @@ class BasketState {
   }
 }
 
-class StatefulBasket extends Basket {
+export class StatefulBasket extends Basket {
   basket: Basket;
   state: BasketState;
   constructor(basket: Basket, state: BasketState = new BasketState()) {
@@ -254,7 +220,7 @@ class StatefulBasket extends Basket {
   }
 }
 
-class ArrayBasket extends Basket {
+export class ArrayBasket extends Basket {
   baskets: Array<Basket>;
   binaryOp: BinaryOp;
   n: number;
@@ -338,7 +304,7 @@ class ArrayBasket extends Basket {
   }
 }
 
-class FulfillmentResultBasket extends Basket {
+export class FulfillmentResultBasket extends Basket {
   predicate: (result: CriterionFulfillmentResult) => boolean;
   basket: Basket;
   constructor(
@@ -375,7 +341,7 @@ class FulfillmentResultBasket extends Basket {
   }
 }
 
-class ModuleBasket extends Basket {
+export class ModuleBasket extends Basket {
   module: Module;
   constructor(module: Module) {
     super();
@@ -406,7 +372,7 @@ class ModuleBasket extends Basket {
   }
 }
 
-class SemPlan {
+export class SemPlan {
   modules: Array<Module>;
 
   private moduleCodeToModuleMap: Map<string, Module> = new Map();
@@ -423,10 +389,10 @@ class SemPlan {
   }
 }
 
-type SemOnePlan = SemPlan;
-type SemTwoPlan = SemPlan;
+export type SemOnePlan = SemPlan;
+export type SemTwoPlan = SemPlan;
 
-class AcademicPlanView {
+export class AcademicPlanView {
   private academicPlan: AcademicPlan;
   modules: Array<Module>;
   constructor(academicPlan: AcademicPlan, modules: Array<Module>) {
@@ -454,7 +420,7 @@ class AcademicPlanView {
   }
 }
 
-class AcademicPlan {
+export class AcademicPlan {
   plans: Array<[SemOnePlan, SemTwoPlan]>;
 
   private modules: Array<Module> = [];
@@ -793,7 +759,7 @@ function testAppliedMathsPlan() {
     st2132,
   );
   academicPlan.checkAgainstBasket(appliedMathBasket);
-  log(appliedMathBasket);
+  log.log(appliedMathBasket);
 }
 
 function testCS2019Plan() {

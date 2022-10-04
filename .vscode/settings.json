@@ -1,0 +1,11 @@
+{
+  "yaml.schemas": {
+    "requirements.schema.jsonc": "*requirements.yaml"
+  },
+  "json.schemas": [
+    {
+      "fileMatch": ["*requirements.json"],
+      "url": "./requirements.schema.jsonc"
+    }
+  ]
+}
