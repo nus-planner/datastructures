@@ -372,6 +372,50 @@ export class ModuleBasket extends Basket {
   }
 }
 
+export class MultiModuleBasket extends Basket {
+  moduleCodePattern?: RegExp;
+  moduleCodePrefix?: Set<string>;
+  moudleCodeSuffix?: Set<string>;
+  level?: Set<1000 | 2000 | 3000 | 4000 | 5000 | 6000>;
+  requiredMCs?: number;
+  constructor(basket: Partial<MultiModuleBasket>) {
+    super();
+    this.moduleCodePattern = basket.moduleCodePattern;
+    this.moduleCodePrefix = basket.moduleCodePrefix;
+    this.moudleCodeSuffix = basket.moudleCodeSuffix;
+    this.level = basket.level;
+    this.requiredMCs = basket.requiredMCs;
+  }
+
+  childBaskets(): Basket[] {
+    return [];
+  }
+
+  isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
+    const filteredModules = academicPlan.getModules().filter((module) => {
+      // TODO
+    });
+
+    let totalMCs = 0;
+    for (const module of filteredModules) {
+      totalMCs += module.credits;
+    }
+
+    let isFulfilled;
+    if (this.requiredMCs === undefined) {
+      isFulfilled = true;
+    } else {
+      isFulfilled = totalMCs >= this.requiredMCs;
+    }
+
+    return new CriterionFulfillmentResult(
+      isFulfilled,
+      totalMCs,
+      new Set(filteredModules),
+    );
+  }
+}
+
 export class SemPlan {
   modules: Array<Module>;
 
@@ -919,12 +963,11 @@ function testCS2019Plan() {
         csBreadthAndDepthState,
       ),
       new StatefulBasket(
-        new ModuleBasket(
-          new Module(
-            "TODO",
-            "We need a new kind of basket to capture the idea of all cs modules. Set this as ModuleBasket for now to remove TypeErrors",
-            4,
-          ),
+        FulfillmentResultBasket.atLeastNMCs(
+          12,
+          new MultiModuleBasket({
+            moduleCodePrefix: new Set(["CS"]),
+          }),
         ),
         /* All CS coded modules */ csBreadthAndDepthState,
       ),
