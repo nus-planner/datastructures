@@ -809,10 +809,10 @@ function testAppliedMathsPlan() {
 function testCS2019Plan() {
   // ULR
   const gehxxxx = new Module("GEHXXXX", "", 4);
-  const geqxxxx = new Module("GEHXXXX", "", 4);
-  const gerxxxx = new Module("GEHXXXX", "", 4);
-  const gesxxxx = new Module("GEHXXXX", "", 4);
-  const getxxxx = new Module("GEHXXXX", "", 4);
+  const geqxxxx = new Module("GEQXXXX", "", 4);
+  const gerxxxx = new Module("GERXXXX", "", 4);
+  const gesxxxx = new Module("GESXXXX", "", 4);
+  const getxxxx = new Module("GETXXXX", "", 4);
 
   const ulrBasket = ArrayBasket.and([
     new ModuleBasket(gehxxxx),
@@ -821,6 +821,11 @@ function testCS2019Plan() {
     new ModuleBasket(gesxxxx),
     new ModuleBasket(getxxxx),
   ]);
+
+  const ueBasket = new MultiModuleBasket({
+    moduleCodePattern: /./,
+    requiredMCs: 32,
+  });
 
   // CS Foundation
   const cs1101s = new Module("CS1101S", "", 4);
@@ -1051,7 +1056,69 @@ function testCS2019Plan() {
     csTeamProjectBasket,
     csItProfessionalismBasket,
     csMathAndSciBasket,
+    ueBasket,
   ]);
+
+  const academicPlan = new AcademicPlan(4);
+  // Dummy UE
+  const ue1 = new Module("UE0001", "", 4);
+  const ue2 = new Module("UE0002", "", 4);
+  const ue3 = new Module("UE0003", "", 4);
+  const ue4 = new Module("UE0004", "", 4);
+  const ue5 = new Module("UE0005", "", 4);
+  const ue6 = new Module("UE0006", "", 4);
+  const ue7 = new Module("UE0007", "", 4);
+  const ue8 = new Module("UE0008", "", 4);
+  const ue9 = new Module("UE0009", "", 4);
+
+  academicPlan.plans[0][0].modules.push(cs1101s, es2660, gerxxxx, is1103, ue1);
+
+  academicPlan.plans[0][1].modules.push(
+    cs1231s,
+    cs2100,
+    cs2030s,
+    ma1101r,
+    gehxxxx,
+  );
+
+  const cs2107 = new Module("CS2107", "", 4);
+  academicPlan.plans[1][0].modules.push(
+    cs2040s,
+    cs2106,
+    cs2107,
+    geqxxxx,
+    ma1521,
+  );
+
+  academicPlan.plans[1][1].modules.push(
+    cs2103t,
+    cs2105,
+    st2334,
+    getxxxx,
+    gesxxxx,
+  );
+
+  const cs3235 = new Module("CS3235", "", 4);
+  const cs3103 = new Module("CS3103", "", 4);
+  const it2900 = new Module("IT2900", "", 4);
+  const uit2201 = new Module("UIT2201", "", 4);
+  academicPlan.plans[2][0].modules.push(
+    cs3235,
+    cs3219,
+    cs3103,
+    it2900,
+    uit2201,
+  );
+
+  const cs4222 = new Module("CS4222", "", 4);
+  const cs5321 = new Module("CS5321", "", 4);
+  academicPlan.plans[2][1].modules.push(cs4218, cs3230, cs5321, cs4222);
+
+  academicPlan.plans[3][0].modules.push(cs3216, ue2, ue3, ue4, ue5);
+  academicPlan.plans[3][1].modules.push(cs3217, ue6, ue7, ue8, ue9);
+
+  academicPlan.checkAgainstBasket(csDegree);
+  log.log(csDegree);
 }
 
 export {};
