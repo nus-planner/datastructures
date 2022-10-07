@@ -949,6 +949,74 @@ function testCS2019Plan() {
     ),
   ]);
 
+  // Algos Focus Area
+  const cs3231 = new Module("CS3231", "", 4);
+  const cs3236 = new Module("CS3236", "", 4);
+  const cs4231 = new Module("CS4231", "", 4);
+  const cs4232 = new Module("CS4232", "", 4);
+  const cs4234 = new Module("CS4234", "", 4);
+  const csAlgosFABasketState = new BasketState();
+
+  const csAlgosFocusAreaPrimaries = ArrayBasket.atLeastN(3, [
+    new StatefulBasket(
+      ArrayBasket.atLeastN(1, [
+        new ModuleBasket(cs4231),
+        new ModuleBasket(cs4232),
+        new ModuleBasket(cs4234),
+      ]),
+      csAlgosFABasketState,
+    ),
+    new StatefulBasket(
+      ArrayBasket.atLeastN(2, [
+        new ModuleBasket(cs3230),
+        new ModuleBasket(cs3231),
+        new ModuleBasket(cs3236),
+        new ModuleBasket(cs4231),
+        new ModuleBasket(cs4232),
+        new ModuleBasket(cs4234),
+      ]),
+      csAlgosFABasketState,
+    ),
+  ]);
+
+  // AI Focus Area
+  const cs2109s = new Module("CS2109S", "", 4);
+  const cs3243 = new Module("cs3243", "", 4);
+  const cs3244 = new Module("CS3244", "", 4);
+  const cs3263 = new Module("CS3263", "", 4);
+  const cs3264 = new Module("CS3264", "", 4);
+  const cs4243 = new Module("CS4243", "", 4);
+  const cs4244 = new Module("CS4244", "", 4);
+  const cs4246 = new Module("CS4246", "", 4);
+  const cs4248 = new Module("CS4248", "", 4);
+  const csAIFABasketState = new BasketState();
+
+  const csAIFocusAreaPrimaries = ArrayBasket.atLeastN(3, [
+    new StatefulBasket(
+      ArrayBasket.atLeastN(1, [
+        new ModuleBasket(cs4243),
+        new ModuleBasket(cs4244),
+        new ModuleBasket(cs4246),
+        new ModuleBasket(cs4248),
+      ]),
+      csAlgosFABasketState,
+    ),
+    new StatefulBasket(
+      ArrayBasket.atLeastN(2, [
+        new ModuleBasket(cs2109s),
+        new ModuleBasket(cs3243),
+        new ModuleBasket(cs3244),
+        new ModuleBasket(cs3263),
+        new ModuleBasket(cs3264),
+        new ModuleBasket(cs4243),
+        new ModuleBasket(cs4244),
+        new ModuleBasket(cs4246),
+        new ModuleBasket(cs4248),
+      ]),
+      csAlgosFABasketState,
+    ),
+  ]);
+
   // TODO: How to satify 24MC requirement? should we throw all the the focus area mods into another giant NOf(3) basket?
   // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
   const csBreadthAndDepthState = new BasketState();
@@ -958,6 +1026,8 @@ function testCS2019Plan() {
       new StatefulBasket(
         ArrayBasket.or([
           csSWEFocusAreaPrimaries,
+          csAlgosFocusAreaPrimaries,
+          csAIFocusAreaPrimaries,
           /* other focus area primaries */
         ]),
         csBreadthAndDepthState,
