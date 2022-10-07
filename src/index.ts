@@ -10,13 +10,15 @@
 // Preclusions
 import * as log from "./log";
 
-const moduleRegex = /[A-Z]+(?<codeNumber>\d)\d+[A-Z]*/;
+const moduleRegex = /(?<prefix>[A-Z]+)(?<codeNumber>\d)\d+(?<suffix>[A-Z]*)/;
 
 export class ModuleState {
   matchedBaskets: Array<Basket> = [];
 }
 export class Module {
   state: ModuleState = new ModuleState();
+  prefix: string;
+  suffix: string;
   code: string;
   level: number;
   name: string;
@@ -30,6 +32,9 @@ export class Module {
     this.level = Number.parseInt(match.groups["codeNumber"]);
     this.name = name;
     this.credits = credits;
+
+    this.prefix = match.groups["prefix"] || "";
+    this.suffix = match.groups["suffix"] || "";
   }
 
   resetState() {
@@ -375,14 +380,14 @@ export class ModuleBasket extends Basket {
 export class MultiModuleBasket extends Basket {
   moduleCodePattern?: RegExp;
   moduleCodePrefix?: Set<string>;
-  moudleCodeSuffix?: Set<string>;
-  level?: Set<1000 | 2000 | 3000 | 4000 | 5000 | 6000>;
+  moduleCodeSuffix?: Set<string>;
+  level?: Set<number>;
   requiredMCs?: number;
   constructor(basket: Partial<MultiModuleBasket>) {
     super();
     this.moduleCodePattern = basket.moduleCodePattern;
     this.moduleCodePrefix = basket.moduleCodePrefix;
-    this.moudleCodeSuffix = basket.moudleCodeSuffix;
+    this.moduleCodeSuffix = basket.moduleCodeSuffix;
     this.level = basket.level;
     this.requiredMCs = basket.requiredMCs;
   }
@@ -393,7 +398,29 @@ export class MultiModuleBasket extends Basket {
 
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
     const filteredModules = academicPlan.getModules().filter((module) => {
-      // TODO
+      if (this.moduleCodePattern && !this.moduleCodePattern.test(module.code)) {
+        return false;
+      }
+
+      if (
+        this.moduleCodePrefix !== undefined &&
+        !this.moduleCodePrefix.has(module.prefix)
+      ) {
+        return false;
+      }
+
+      if (
+        this.moduleCodeSuffix !== undefined &&
+        !this.moduleCodeSuffix.has(module.suffix)
+      ) {
+        return false;
+      }
+
+      if (this.level !== undefined && !this.level.has(module.level)) {
+        return false;
+      }
+
+      return true;
     });
 
     let totalMCs = 0;
