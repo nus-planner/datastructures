@@ -999,7 +999,7 @@ function testCS2019Plan() {
         new ModuleBasket(cs4246),
         new ModuleBasket(cs4248),
       ]),
-      csAlgosFABasketState,
+      csAIFABasketState,
     ),
     new StatefulBasket(
       ArrayBasket.atLeastN(2, [
@@ -1013,7 +1013,7 @@ function testCS2019Plan() {
         new ModuleBasket(cs4246),
         new ModuleBasket(cs4248),
       ]),
-      csAlgosFABasketState,
+      csAIFABasketState,
     ),
   ]);
 
