@@ -94,7 +94,7 @@ class PropertySetFilter<K extends keyof Module> extends Filter {
   }
 
   filter(module: Module): boolean {
-    return this.set.has(module[this.propertyName]);
+    return !this.set.has(module[this.propertyName]);
   }
 }
 
@@ -268,8 +268,10 @@ export class ArrayBasket extends Basket {
     switch (this.binaryOp) {
       case BinaryOp.GEQ:
         toMatch = this.n;
+        break;
       case BinaryOp.GT:
         toMatch = this.n + 1;
+        break;
     }
     if (this.earlyTerminate) {
       for (let basket of this.baskets) {
@@ -302,7 +304,7 @@ export class ArrayBasket extends Basket {
 
     return fulfilled
       ? new CriterionFulfillmentResult(true, totalMCs, allMatchedModules)
-      : new CriterionFulfillmentResult(false);
+      : new CriterionFulfillmentResult(false, totalMCs, allMatchedModules);
   }
   acceptEvent(event: BasketEvent): void {
     console.log("Nothing is done so far.");
@@ -324,7 +326,14 @@ export class FulfillmentResultBasket extends Basket {
   static atLeastNMCs(numMCs: number, basket: Basket) {
     return new FulfillmentResultBasket(
       basket,
-      (result) => result.matchedMCs > numMCs,
+      (result) => result.matchedMCs >= numMCs,
+    );
+  }
+
+  static atLeastNModules(numberOfModules: number, basket: Basket) {
+    return new FulfillmentResultBasket(
+      basket,
+      (result) => result.matchedModules.size >= numberOfModules,
     );
   }
 
@@ -333,9 +342,13 @@ export class FulfillmentResultBasket extends Basket {
   }
 
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
-    const fulfilled = this.basket.isFulfilled(academicPlan);
+    const fulfilled = this.basket.isFulfilledWithState(academicPlan);
     if (!fulfilled.isFulfilled || !this.predicate(fulfilled)) {
-      return new CriterionFulfillmentResult(false);
+      return new CriterionFulfillmentResult(
+        false,
+        fulfilled.matchedMCs,
+        fulfilled.matchedModules,
+      );
     } else {
       return fulfilled;
     }
@@ -358,7 +371,10 @@ export class ModuleBasket extends Basket {
       .getModules()
       .find((m) => m.code == this.module.code);
 
-    this.sendEventUpwards(new CriterionMatchModuleEvent(this.module));
+    if (found) {
+      this.sendEventUpwards(new CriterionMatchModuleEvent(this.module));
+    }
+
     return found
       ? new CriterionFulfillmentResult(
           true,
@@ -835,11 +851,11 @@ function testAppliedMathsPlan() {
 
 function testCS2019Plan() {
   // ULR
-  const gehxxxx = new Module("GEHXXXX", "", 4);
-  const geqxxxx = new Module("GEHXXXX", "", 4);
-  const gerxxxx = new Module("GEHXXXX", "", 4);
-  const gesxxxx = new Module("GEHXXXX", "", 4);
-  const getxxxx = new Module("GEHXXXX", "", 4);
+  const gehxxxx = new Module("GEH0000", "", 4);
+  const geqxxxx = new Module("GEQ0000", "", 4);
+  const gerxxxx = new Module("GER0000", "", 4);
+  const gesxxxx = new Module("GES0000", "", 4);
+  const getxxxx = new Module("GET0000", "", 4);
 
   const ulrBasket = ArrayBasket.and([
     new ModuleBasket(gehxxxx),
@@ -848,6 +864,11 @@ function testCS2019Plan() {
     new ModuleBasket(gesxxxx),
     new ModuleBasket(getxxxx),
   ]);
+
+  const ueBasket = new MultiModuleBasket({
+    moduleCodePattern: /./,
+    requiredMCs: 32,
+  });
 
   // CS Foundation
   const cs1101s = new Module("CS1101S", "", 4);
@@ -954,27 +975,30 @@ function testCS2019Plan() {
   const csSWEFABasketState = new BasketState();
 
   // This probably needs to be a stateful basket or something to prevent doublecounting?
-  const csSWEFocusAreaPrimaries = ArrayBasket.atLeastN(3, [
-    new StatefulBasket(
-      ArrayBasket.atLeastN(1, [
-        new ModuleBasket(cs4211),
-        new ModuleBasket(cs4218),
-        new ModuleBasket(cs4239),
-      ]),
-      csSWEFABasketState,
-    ),
-    new StatefulBasket(
-      ArrayBasket.atLeastN(2, [
-        new ModuleBasket(cs2103t),
-        new ModuleBasket(cs3213),
-        new ModuleBasket(cs3219),
-        new ModuleBasket(cs4211),
-        new ModuleBasket(cs4218),
-        new ModuleBasket(cs4239),
-      ]),
-      csSWEFABasketState,
-    ),
-  ]);
+  const csSWEFocusAreaPrimaries = FulfillmentResultBasket.atLeastNModules(
+    3,
+    ArrayBasket.and([
+      new StatefulBasket(
+        ArrayBasket.atLeastN(1, [
+          new ModuleBasket(cs4211),
+          new ModuleBasket(cs4218),
+          new ModuleBasket(cs4239),
+        ]),
+        csSWEFABasketState,
+      ),
+      new StatefulBasket(
+        ArrayBasket.atLeastN(2, [
+          new ModuleBasket(cs2103t),
+          new ModuleBasket(cs3213),
+          new ModuleBasket(cs3219),
+          new ModuleBasket(cs4211),
+          new ModuleBasket(cs4218),
+          new ModuleBasket(cs4239),
+        ]),
+        csSWEFABasketState,
+      ),
+    ]),
+  );
 
   // Algos Focus Area
   const cs3231 = new Module("CS3231", "", 4);
@@ -1008,7 +1032,7 @@ function testCS2019Plan() {
 
   // AI Focus Area
   const cs2109s = new Module("CS2109S", "", 4);
-  const cs3243 = new Module("cs3243", "", 4);
+  const cs3243 = new Module("CS3243", "", 4);
   const cs3244 = new Module("CS3244", "", 4);
   const cs3263 = new Module("CS3263", "", 4);
   const cs3264 = new Module("CS3264", "", 4);
@@ -1053,8 +1077,8 @@ function testCS2019Plan() {
       new StatefulBasket(
         ArrayBasket.or([
           csSWEFocusAreaPrimaries,
-          csAlgosFocusAreaPrimaries,
-          csAIFocusAreaPrimaries,
+          // csAlgosFocusAreaPrimaries,
+          // csAIFocusAreaPrimaries,
           /* other focus area primaries */
         ]),
         csBreadthAndDepthState,
@@ -1071,14 +1095,80 @@ function testCS2019Plan() {
     ]),
   );
 
+  const overallDegreeState = new BasketState();
   const csDegree = ArrayBasket.and([
-    ulrBasket,
-    csFoundationBasket,
-    csBreadthAndDepthBasket,
-    csTeamProjectBasket,
-    csItProfessionalismBasket,
-    csMathAndSciBasket,
+    new StatefulBasket(ulrBasket, overallDegreeState),
+    new StatefulBasket(csFoundationBasket, overallDegreeState),
+    new StatefulBasket(csBreadthAndDepthBasket, overallDegreeState),
+    new StatefulBasket(csTeamProjectBasket, overallDegreeState),
+    new StatefulBasket(csItProfessionalismBasket, overallDegreeState),
+    new StatefulBasket(csMathAndSciBasket, overallDegreeState),
+    new StatefulBasket(ueBasket, overallDegreeState),
   ]);
+
+  const academicPlan = new AcademicPlan(4);
+  // Dummy UE
+  const ue1 = new Module("UE0001", "", 4);
+  const ue2 = new Module("UE0002", "", 4);
+  const ue3 = new Module("UE0003", "", 4);
+  const ue4 = new Module("UE0004", "", 4);
+  const ue5 = new Module("UE0005", "", 4);
+  const ue6 = new Module("UE0006", "", 4);
+  const ue7 = new Module("UE0007", "", 4);
+  const ue8 = new Module("UE0008", "", 4);
+  const ue9 = new Module("UE0009", "", 4);
+
+  academicPlan.plans[0][0].modules.push(cs1101s, es2660, is1103, ue1, gerxxxx);
+
+  academicPlan.plans[0][1].modules.push(
+    cs1231s,
+    cs2100,
+    cs2030s,
+    ma1101r,
+    gehxxxx,
+  );
+
+  const cs2107 = new Module("CS2107", "", 4);
+  academicPlan.plans[1][0].modules.push(
+    cs2040s,
+    cs2106,
+    cs2107,
+    ma1521,
+    geqxxxx,
+  );
+
+  academicPlan.plans[1][1].modules.push(
+    cs2103t,
+    cs2105,
+    st2334,
+    getxxxx,
+    gesxxxx,
+  );
+
+  const cs3235 = new Module("CS3235", "", 4);
+  const cs3103 = new Module("CS3103", "", 4);
+  const it2900 = new Module("IT2900", "", 4);
+  const uit2201 = new Module("UIT2201", "", 4);
+  academicPlan.plans[2][0].modules.push(
+    cs3235,
+    cs3219,
+    cs3103,
+    it2900,
+    uit2201,
+  );
+
+  const cs4222 = new Module("CS4222", "", 4);
+  const cs5321 = new Module("CS5321", "", 4);
+  academicPlan.plans[2][1].modules.push(cs4218, cs3230, cs5321, cs4222);
+
+  academicPlan.plans[3][0].modules.push(cs3216, ue2, ue3, ue4, ue5);
+  academicPlan.plans[3][1].modules.push(cs3217, ue6, ue7, ue8, ue9);
+
+  const result = academicPlan.checkAgainstBasket(csDegree);
+  log.log(result);
+  log.log(csDegree);
 }
+
+testCS2019Plan();
 
 export {};
