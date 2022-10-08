@@ -73,6 +73,10 @@
                 "level": {
                   "description": "Level filter",
                   "enum": [1000, 2000, 3000, 4000, 5000, 6000]
+                },
+                "double_count": {
+                  "type": "boolean",
+                  "default": false
                 }
               }
             }

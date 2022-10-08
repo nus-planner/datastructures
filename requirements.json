@@ -75,7 +75,14 @@
                       "at_least_n_of": {
                         "n": 2,
                         "baskets": [
-                          "CS2103T",
+                          {
+                            "CS2103T": {
+                              "module": {
+                                "code": "CS2103T",
+                                "double_count": true
+                              }
+                            }
+                          },
                           "CS3213",
                           "CS3219",
                           "CS4211",

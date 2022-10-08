@@ -9,12 +9,14 @@
 // Prereqs
 // Preclusions
 import * as log from "./log";
+import * as input from "./input";
 
 const moduleRegex = /(?<prefix>[A-Z]+)(?<codeNumber>\d)\d+(?<suffix>[A-Z]*)/;
 
 export class ModuleState {
   matchedBaskets: Array<Basket> = [];
 }
+
 export class Module {
   state: ModuleState = new ModuleState();
   prefix: string;
@@ -117,15 +119,35 @@ class CriterionFulfillmentResult {
     this.matchedMCs = matchedMCs;
     this.matchedModules = matchedModules;
   }
+
+  mergeResult(result: CriterionFulfillmentResult) {
+    this.isFulfilled = result.isFulfilled;
+    this.matchedMCs = result.matchedMCs;
+    for (const module of result.matchedModules) {
+      this.matchedModules.add(module);
+    }
+  }
 }
 
 class CriterionState {
   lastResult: CriterionFulfillmentResult = new CriterionFulfillmentResult();
+
+  mergeState(state: CriterionState) {
+    this.lastResult.mergeResult(state.lastResult);
+  }
 }
 
 abstract class BasketEvent {}
 
 class CriterionMatchModuleEvent extends BasketEvent {
+  module: Module;
+  constructor(module: Module) {
+    super();
+    this.module = module;
+  }
+}
+
+class DoubleCountModuleEvent extends BasketEvent {
   module: Module;
   constructor(module: Module) {
     super();
@@ -150,8 +172,13 @@ export interface Criterion {
  */
 
 export abstract class Basket implements Criterion, CriterionEventDelegate {
+  name: string;
   criterionState: CriterionState = new CriterionState();
   parentBasket?: Basket;
+
+  constructor(name: string = "") {
+    this.name = name;
+  }
 
   abstract isFulfilled(
     academicPlan: AcademicPlanView,
@@ -161,7 +188,7 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
     academicPlan: AcademicPlanView,
   ): CriterionFulfillmentResult {
     const fulfilled = this.isFulfilled(academicPlan);
-    this.criterionState.lastResult = fulfilled;
+    this.criterionState.lastResult.mergeResult(fulfilled);
     return fulfilled;
   }
 
@@ -185,7 +212,51 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   acceptEvent(event: BasketEvent): void {
     if (event instanceof CriterionMatchModuleEvent) {
       event.module.state.matchedBaskets.push(this);
+    } else if (event instanceof DoubleCountModuleEvent) {
+      event.module.state.matchedBaskets.push(this);
+      this.criterionState.lastResult.matchedModules.add(event.module);
     }
+  }
+
+  hasMeaningfulName(): boolean {
+    return this.name.length > 0;
+  }
+
+  getPrintableClone(meaningfulDepth: number = 2): PrintableBasket {
+    const clone = new PrintableBasket(this);
+    if (meaningfulDepth > 0) {
+      for (const child of this.childBaskets()) {
+        if (!child.hasMeaningfulName) {
+          clone.children.push(child.getPrintableClone(meaningfulDepth));
+        } else {
+          clone.children.push(child.getPrintableClone(meaningfulDepth - 1));
+        }
+      }
+    }
+    return clone;
+  }
+}
+
+class PrintableCriterionState {
+  isFulfilled: boolean;
+  matchedMCs: number;
+  matchedModules: Array<string> = [];
+  constructor(criterionState: CriterionState) {
+    this.isFulfilled = criterionState.lastResult.isFulfilled;
+    this.matchedMCs = criterionState.lastResult.matchedMCs;
+    for (const module of criterionState.lastResult.matchedModules) {
+      this.matchedModules.push(module.code);
+    }
+  }
+}
+
+class PrintableBasket {
+  name: string;
+  children: Array<PrintableBasket> = [];
+  criterionState: PrintableCriterionState;
+  constructor(basket: Basket) {
+    this.name = basket.name;
+    this.criterionState = new PrintableCriterionState(basket.criterionState);
   }
 }
 
@@ -219,6 +290,7 @@ export class StatefulBasket extends Basket {
   }
 
   acceptEvent(event: BasketEvent): void {
+    super.acceptEvent(event);
     if (event instanceof CriterionMatchModuleEvent) {
       this.state.moduleCodesAlreadyMatched.add(event.module.code);
     }
@@ -232,12 +304,13 @@ export class ArrayBasket extends Basket {
   earlyTerminate: boolean;
 
   constructor(
+    name: string,
     baskets: Array<Basket>,
     binaryOp: BinaryOp,
     n: number,
     earlyTerminate: boolean,
   ) {
-    super();
+    super(name);
     this.baskets = baskets;
     this.baskets.forEach((basket) => (basket.parentBasket = this));
     this.binaryOp = binaryOp;
@@ -245,16 +318,16 @@ export class ArrayBasket extends Basket {
     this.earlyTerminate = earlyTerminate;
   }
 
-  static or(baskets: Array<Basket>): ArrayBasket {
-    return new ArrayBasket(baskets, BinaryOp.GEQ, 1, true);
+  static or(name: string, baskets: Array<Basket>): ArrayBasket {
+    return new ArrayBasket(name, baskets, BinaryOp.GEQ, 1, true);
   }
 
-  static and(baskets: Array<Basket>): ArrayBasket {
-    return new ArrayBasket(baskets, BinaryOp.GEQ, baskets.length, false);
+  static and(name: string, baskets: Array<Basket>): ArrayBasket {
+    return new ArrayBasket(name, baskets, BinaryOp.GEQ, baskets.length, false);
   }
 
-  static atLeastN(n: number, basket: Array<Basket>): ArrayBasket {
-    return new ArrayBasket(basket, BinaryOp.GEQ, n, true);
+  static atLeastN(name: string, n: number, basket: Array<Basket>): ArrayBasket {
+    return new ArrayBasket(name, basket, BinaryOp.GEQ, n, true);
   }
 
   childBaskets(): Basket[] {
@@ -307,7 +380,7 @@ export class ArrayBasket extends Basket {
       : new CriterionFulfillmentResult(false, totalMCs, allMatchedModules);
   }
   acceptEvent(event: BasketEvent): void {
-    console.log("Nothing is done so far.");
+    super.acceptEvent(event);
   }
 }
 
@@ -315,23 +388,30 @@ export class FulfillmentResultBasket extends Basket {
   predicate: (result: CriterionFulfillmentResult) => boolean;
   basket: Basket;
   constructor(
+    name: string,
     basket: Basket,
     predicate: typeof FulfillmentResultBasket.prototype.predicate,
   ) {
-    super();
+    super(name);
     this.basket = basket;
     this.basket.parentBasket = this;
     this.predicate = predicate;
   }
-  static atLeastNMCs(numMCs: number, basket: Basket) {
+  static atLeastNMCs(name: string, numMCs: number, basket: Basket) {
     return new FulfillmentResultBasket(
+      name,
       basket,
       (result) => result.matchedMCs >= numMCs,
     );
   }
 
-  static atLeastNModules(numberOfModules: number, basket: Basket) {
+  static atLeastNModules(
+    name: string,
+    numberOfModules: number,
+    basket: Basket,
+  ) {
     return new FulfillmentResultBasket(
+      name,
       basket,
       (result) => result.matchedModules.size >= numberOfModules,
     );
@@ -355,7 +435,7 @@ export class FulfillmentResultBasket extends Basket {
   }
 
   acceptEvent(event: BasketEvent): void {
-    console.log("Nothing is done so far.");
+    super.acceptEvent(event);
   }
 }
 
@@ -389,7 +469,11 @@ export class ModuleBasket extends Basket {
   }
 
   acceptEvent(event: BasketEvent): void {
-    console.log("Nothing is done so far.");
+    super.acceptEvent(event);
+  }
+
+  doubleCount() {
+    this.sendEventUpwards(new DoubleCountModuleEvent(this.module));
   }
 }
 
@@ -543,6 +627,20 @@ export class AcademicPlan {
     this.modules.forEach((module) => module.resetState());
   }
 
+  checkAgainstConfig(config: input.ConvertedConfig) {
+    for (const [k, v] of config.doubleCountedModules) {
+      if (this.getPlanView().modules.find((m) => m.code === k) === undefined) {
+        continue;
+      }
+
+      for (const basket of v) {
+        basket.doubleCount();
+      }
+    }
+
+    this.checkAgainstBasket(config.basket);
+  }
+
   checkAgainstBasket(basket: Basket): boolean {
     return basket.isFulfilledWithState(this.getPlanView()).isFulfilled;
   }
@@ -636,7 +734,7 @@ function testAppliedMathsPlan() {
 
   const academicPlan = new AcademicPlan(4);
   const listIIBasket = new StatefulBasket(
-    ArrayBasket.or([
+    ArrayBasket.or("list 2", [
       new ModuleBasket(pc2130),
       new ModuleBasket(pc2132),
       new ModuleBasket(st2132),
@@ -644,7 +742,7 @@ function testAppliedMathsPlan() {
     ]),
   );
 
-  const listIIIBasket = ArrayBasket.or([
+  const listIIIBasket = ArrayBasket.or("list 3", [
     new ModuleBasket(bse3703),
     new ModuleBasket(cs3230),
     new ModuleBasket(cs3231),
@@ -659,9 +757,9 @@ function testAppliedMathsPlan() {
     new ModuleBasket(st3236),
   ]);
 
-  const listIVBasket = ArrayBasket.or([]);
+  const listIVBasket = ArrayBasket.or("list 4", []);
 
-  const am3ABasket = ArrayBasket.or([
+  const am3ABasket = ArrayBasket.or("AM3A", [
     new ModuleBasket(ma3220),
     new ModuleBasket(ma3227),
     new ModuleBasket(ma3233),
@@ -669,7 +767,7 @@ function testAppliedMathsPlan() {
     new ModuleBasket(st3131),
   ]);
 
-  const am3BBasket = ArrayBasket.or([
+  const am3BBasket = ArrayBasket.or("AM3B", [
     new ModuleBasket(ma3236),
     new ModuleBasket(ma3238),
     new ModuleBasket(ma3252),
@@ -677,9 +775,9 @@ function testAppliedMathsPlan() {
     new ModuleBasket(st3131),
   ]);
 
-  const am3Basket = ArrayBasket.or([am3ABasket, am3BBasket]);
+  const am3Basket = ArrayBasket.or("AM3", [am3ABasket, am3BBasket]);
 
-  const am4ABasket = ArrayBasket.or([
+  const am4ABasket = ArrayBasket.or("AM4A", [
     new ModuleBasket(ma4229),
     new ModuleBasket(ma4230),
     new ModuleBasket(ma4255),
@@ -688,7 +786,7 @@ function testAppliedMathsPlan() {
     new ModuleBasket(ma4270),
   ]);
 
-  const am4BBasket = ArrayBasket.or([
+  const am4BBasket = ArrayBasket.or("AM4B", [
     new ModuleBasket(ma4235),
     new ModuleBasket(ma4254),
     new ModuleBasket(ma4260),
@@ -697,7 +795,7 @@ function testAppliedMathsPlan() {
     new ModuleBasket(ma4270),
   ]);
 
-  const am4Basket = ArrayBasket.or([am4ABasket, am4BBasket]);
+  const am4Basket = ArrayBasket.or("AM4", [am4ABasket, am4BBasket]);
 
   const listState = new BasketState(
     new Set(
@@ -717,16 +815,16 @@ function testAppliedMathsPlan() {
   const am3State = new BasketState();
   const am4State = new BasketState();
 
-  const level1000Basket = ArrayBasket.and([
-    ArrayBasket.or([
+  const level1000Basket = ArrayBasket.and("Level 1000", [
+    ArrayBasket.or("", [
       new ModuleBasket(ma1100),
       new ModuleBasket(ma1100t),
       new ModuleBasket(cs1231),
       new ModuleBasket(cs1231s),
     ]),
-    ArrayBasket.or([new ModuleBasket(ma1101r), new ModuleBasket(ma2001)]),
-    ArrayBasket.or([new ModuleBasket(ma1102r), new ModuleBasket(ma2002)]),
-    ArrayBasket.or([
+    ArrayBasket.or("", [new ModuleBasket(ma1101r), new ModuleBasket(ma2001)]),
+    ArrayBasket.or("", [new ModuleBasket(ma1102r), new ModuleBasket(ma2002)]),
+    ArrayBasket.or("", [
       new ModuleBasket(cs1010),
       new ModuleBasket(cs1010e),
       new ModuleBasket(cs1010s),
@@ -736,34 +834,34 @@ function testAppliedMathsPlan() {
   ]);
 
   // The last part of the level 2000 basket is "Pass one additional mod from List II, III, IV"
-  const level2000Basket = ArrayBasket.and([
-    ArrayBasket.or([new ModuleBasket(ma2101), new ModuleBasket(ma2101s)]),
+  const level2000Basket = ArrayBasket.and("", [
+    ArrayBasket.or("", [new ModuleBasket(ma2101), new ModuleBasket(ma2101s)]),
     new ModuleBasket(ma2104),
-    ArrayBasket.or([new ModuleBasket(ma2108), new ModuleBasket(ma2108s)]),
+    ArrayBasket.or("", [new ModuleBasket(ma2108), new ModuleBasket(ma2108s)]),
     new ModuleBasket(ma2213),
-    ArrayBasket.or([
+    ArrayBasket.or("", [
       new ModuleBasket(ma2216),
       new ModuleBasket(ma2116),
       new ModuleBasket(st2131),
     ]),
-    ArrayBasket.or([
+    ArrayBasket.or("Lists 2 to 4", [
       new StatefulBasket(listIIBasket, listState),
       new StatefulBasket(listIIIBasket, listState),
       new StatefulBasket(listIVBasket, listState),
     ]),
   ]);
 
-  const level3000Basket = ArrayBasket.and([
+  const level3000Basket = ArrayBasket.and("Level 3000", [
     new StatefulBasket(am3BBasket, am3State),
     new StatefulBasket(am3Basket, am3State),
     new StatefulBasket(am3Basket, am3State),
-    ArrayBasket.or([
+    ArrayBasket.or("Lists 3 to 4", [
       new StatefulBasket(listIIIBasket, listState),
       new StatefulBasket(listIVBasket, listState),
     ]),
   ]);
 
-  const level4000Basket = ArrayBasket.and([
+  const level4000Basket = ArrayBasket.and("Level 4000", [
     new ModuleBasket(ma4199),
     new StatefulBasket(am4Basket, am4State),
     new StatefulBasket(am4Basket, am4State),
@@ -772,7 +870,7 @@ function testAppliedMathsPlan() {
     new StatefulBasket(listIVBasket, listState),
   ]);
 
-  const appliedMathBasket = ArrayBasket.and([
+  const appliedMathBasket = ArrayBasket.and("Applied Maths", [
     level1000Basket,
     level2000Basket,
     level3000Basket,
@@ -857,7 +955,7 @@ function testCS2019Plan() {
   const gesxxxx = new Module("GES0000", "", 4);
   const getxxxx = new Module("GET0000", "", 4);
 
-  const ulrBasket = ArrayBasket.and([
+  const ulrBasket = ArrayBasket.and("General Education", [
     new ModuleBasket(gehxxxx),
     new ModuleBasket(geqxxxx),
     new ModuleBasket(gerxxxx),
@@ -881,15 +979,18 @@ function testCS2019Plan() {
   const cs2105 = new Module("CS2105", "", 4);
   const cs2106 = new Module("CS2106", "", 4);
   const cs3230 = new Module("CS3230", "", 4);
-
-  const csFoundationBasket = ArrayBasket.and([
-    ArrayBasket.or([new ModuleBasket(cs1101s), new ModuleBasket(cs1010x)]),
-    ArrayBasket.and([
+  const foundation_cs2103tBasket = new ModuleBasket(cs2103t);
+  const csFoundationBasket = ArrayBasket.and("CS Foundation", [
+    ArrayBasket.or("Programming Methodology", [
+      new ModuleBasket(cs1101s),
+      new ModuleBasket(cs1010x),
+    ]),
+    ArrayBasket.and("", [
       new ModuleBasket(cs1231s),
       new ModuleBasket(cs2030s),
       new ModuleBasket(cs2040s),
       new ModuleBasket(cs2100),
-      new ModuleBasket(cs2103t),
+      foundation_cs2103tBasket,
       new ModuleBasket(cs2105),
       new ModuleBasket(cs2106),
       new ModuleBasket(cs3230),
@@ -910,10 +1011,16 @@ function testCS2019Plan() {
   const cs3282 = new Module("CS3282", "", 4);
   const cs3203 = new Module("CS3203", "", 8);
 
-  const csTeamProjectBasket = ArrayBasket.or([
+  const csTeamProjectBasket = ArrayBasket.or("CS Team Project", [
     new ModuleBasket(cs3203),
-    ArrayBasket.and([new ModuleBasket(cs3216), new ModuleBasket(cs3217)]),
-    ArrayBasket.and([new ModuleBasket(cs3281), new ModuleBasket(cs3282)]),
+    ArrayBasket.and("CS3216/17 combo", [
+      new ModuleBasket(cs3216),
+      new ModuleBasket(cs3217),
+    ]),
+    ArrayBasket.and("CS3281/82 combo", [
+      new ModuleBasket(cs3281),
+      new ModuleBasket(cs3282),
+    ]),
   ]);
 
   // IT professionalism
@@ -922,8 +1029,8 @@ function testCS2019Plan() {
   const cs2101 = new Module("CS2101", "", 4);
   const es2660 = new Module("ES2660", "", 4);
 
-  const csItProfessionalismBasket = ArrayBasket.and([
-    ArrayBasket.or([new ModuleBasket(is1103), new ModuleBasket(is1108)]),
+  const csItProfessionalismBasket = ArrayBasket.and("CS IT Professionalism", [
+    ArrayBasket.or("", [new ModuleBasket(is1103), new ModuleBasket(is1108)]),
     new ModuleBasket(cs2101),
     new ModuleBasket(es2660),
   ]);
@@ -937,10 +1044,10 @@ function testCS2019Plan() {
   const is4010 = new Module("IS4010", "", 12);
   const tr3203 = new Module("TR3202", "", 12);
 
-  const csIndustryExpBasket = ArrayBasket.or([
+  const csIndustryExpBasket = ArrayBasket.or("CS Industry Experience", [
     new ModuleBasket(cp3880),
-    ArrayBasket.or([new ModuleBasket(cp3200), new ModuleBasket(cp3202)]),
-    ArrayBasket.or([new ModuleBasket(cp3107), new ModuleBasket(cp3110)]),
+    ArrayBasket.or("", [new ModuleBasket(cp3200), new ModuleBasket(cp3202)]),
+    ArrayBasket.or("", [new ModuleBasket(cp3107), new ModuleBasket(cp3110)]),
     new ModuleBasket(is4010),
     new ModuleBasket(tr3203),
   ]);
@@ -956,14 +1063,14 @@ function testCS2019Plan() {
   // TODO: Fill this list up
   const pc1221 = new Module("PC1221", "", 4);
 
-  const csMathAndSciBasket = ArrayBasket.and([
-    ArrayBasket.or([
-      ArrayBasket.and([new ModuleBasket(st2131), new ModuleBasket(st2132)]),
+  const csMathAndSciBasket = ArrayBasket.and("Math and Sci", [
+    ArrayBasket.or("Statistics", [
+      ArrayBasket.and("", [new ModuleBasket(st2131), new ModuleBasket(st2132)]),
       new ModuleBasket(st2334),
     ]),
     new ModuleBasket(ma1101r),
     new ModuleBasket(ma1521),
-    ArrayBasket.or([new ModuleBasket(pc1221)]),
+    ArrayBasket.or("", [new ModuleBasket(pc1221)]),
   ]);
 
   // SWE Focus Area
@@ -975,11 +1082,13 @@ function testCS2019Plan() {
   const csSWEFABasketState = new BasketState();
 
   // This probably needs to be a stateful basket or something to prevent doublecounting?
+  const swe_cs2103tBasket = new ModuleBasket(cs2103t);
   const csSWEFocusAreaPrimaries = FulfillmentResultBasket.atLeastNModules(
+    "SWE FA",
     3,
-    ArrayBasket.and([
+    ArrayBasket.and("", [
       new StatefulBasket(
-        ArrayBasket.atLeastN(1, [
+        ArrayBasket.atLeastN("Level 4000", 1, [
           new ModuleBasket(cs4211),
           new ModuleBasket(cs4218),
           new ModuleBasket(cs4239),
@@ -987,8 +1096,8 @@ function testCS2019Plan() {
         csSWEFABasketState,
       ),
       new StatefulBasket(
-        ArrayBasket.atLeastN(2, [
-          new ModuleBasket(cs2103t),
+        ArrayBasket.atLeastN("", 2, [
+          swe_cs2103tBasket,
           new ModuleBasket(cs3213),
           new ModuleBasket(cs3219),
           new ModuleBasket(cs4211),
@@ -1008,9 +1117,9 @@ function testCS2019Plan() {
   const cs4234 = new Module("CS4234", "", 4);
   const csAlgosFABasketState = new BasketState();
 
-  const csAlgosFocusAreaPrimaries = ArrayBasket.atLeastN(3, [
+  const csAlgosFocusAreaPrimaries = ArrayBasket.atLeastN("Algo FA", 3, [
     new StatefulBasket(
-      ArrayBasket.atLeastN(1, [
+      ArrayBasket.atLeastN("Level 4000", 1, [
         new ModuleBasket(cs4231),
         new ModuleBasket(cs4232),
         new ModuleBasket(cs4234),
@@ -1018,7 +1127,7 @@ function testCS2019Plan() {
       csAlgosFABasketState,
     ),
     new StatefulBasket(
-      ArrayBasket.atLeastN(2, [
+      ArrayBasket.atLeastN("", 2, [
         new ModuleBasket(cs3230),
         new ModuleBasket(cs3231),
         new ModuleBasket(cs3236),
@@ -1042,9 +1151,9 @@ function testCS2019Plan() {
   const cs4248 = new Module("CS4248", "", 4);
   const csAIFABasketState = new BasketState();
 
-  const csAIFocusAreaPrimaries = ArrayBasket.atLeastN(3, [
+  const csAIFocusAreaPrimaries = ArrayBasket.atLeastN("AI FA", 3, [
     new StatefulBasket(
-      ArrayBasket.atLeastN(1, [
+      ArrayBasket.atLeastN("", 1, [
         new ModuleBasket(cs4243),
         new ModuleBasket(cs4244),
         new ModuleBasket(cs4246),
@@ -1053,7 +1162,7 @@ function testCS2019Plan() {
       csAIFABasketState,
     ),
     new StatefulBasket(
-      ArrayBasket.atLeastN(2, [
+      ArrayBasket.atLeastN("", 2, [
         new ModuleBasket(cs2109s),
         new ModuleBasket(cs3243),
         new ModuleBasket(cs3244),
@@ -1072,10 +1181,11 @@ function testCS2019Plan() {
   // e.g csbreadthAndDepth = new AndBasket(new NOfBasket(1, [all focus area primaries]), new NOfBasket(3, [all focus area mods]))
   const csBreadthAndDepthState = new BasketState();
   const csBreadthAndDepthBasket = FulfillmentResultBasket.atLeastNMCs(
+    "Breadth and Depth",
     24,
-    ArrayBasket.and([
+    ArrayBasket.and("", [
       new StatefulBasket(
-        ArrayBasket.or([
+        ArrayBasket.or("", [
           csSWEFocusAreaPrimaries,
           // csAlgosFocusAreaPrimaries,
           // csAIFocusAreaPrimaries,
@@ -1085,6 +1195,7 @@ function testCS2019Plan() {
       ),
       new StatefulBasket(
         FulfillmentResultBasket.atLeastNMCs(
+          "",
           12,
           new MultiModuleBasket({
             moduleCodePrefix: new Set(["CS"]),
@@ -1096,7 +1207,7 @@ function testCS2019Plan() {
   );
 
   const overallDegreeState = new BasketState();
-  const csDegree = ArrayBasket.and([
+  const csDegree = ArrayBasket.and("CS Degree", [
     new StatefulBasket(ulrBasket, overallDegreeState),
     new StatefulBasket(csFoundationBasket, overallDegreeState),
     new StatefulBasket(csBreadthAndDepthBasket, overallDegreeState),
@@ -1104,6 +1215,14 @@ function testCS2019Plan() {
     new StatefulBasket(csItProfessionalismBasket, overallDegreeState),
     new StatefulBasket(csMathAndSciBasket, overallDegreeState),
     new StatefulBasket(ueBasket, overallDegreeState),
+  ]);
+
+  const config = new input.ConvertedConfig();
+  config.basket = csDegree;
+  config.doubleCountedModules = new Map();
+  config.doubleCountedModules.set("CS2103T", [
+    foundation_cs2103tBasket,
+    swe_cs2103tBasket,
   ]);
 
   const academicPlan = new AcademicPlan(4);
@@ -1164,9 +1283,10 @@ function testCS2019Plan() {
   academicPlan.plans[3][0].modules.push(cs3216, ue2, ue3, ue4, ue5);
   academicPlan.plans[3][1].modules.push(cs3217, ue6, ue7, ue8, ue9);
 
-  const result = academicPlan.checkAgainstBasket(csDegree);
-  log.log(result);
-  log.log(csDegree);
+  const result = academicPlan.checkAgainstConfig(config);
+  // log.log(result);
+  // log.log(csDegree);
+  log.log(config.basket.getPrintableClone(3));
 }
 
 testCS2019Plan();
