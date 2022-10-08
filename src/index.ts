@@ -121,7 +121,7 @@ class CriterionFulfillmentResult {
   }
 
   mergeResult(result: CriterionFulfillmentResult) {
-    this.isFulfilled = result.isFulfilled;
+    this.isFulfilled = this.isFulfilled || result.isFulfilled;
     this.matchedMCs = result.matchedMCs;
     for (const module of result.matchedModules) {
       this.matchedModules.add(module);
@@ -214,6 +214,7 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
       event.module.state.matchedBaskets.push(this);
     } else if (event instanceof DoubleCountModuleEvent) {
       event.module.state.matchedBaskets.push(this);
+      this.criterionState.lastResult.isFulfilled = true;
       this.criterionState.lastResult.matchedModules.add(event.module);
     }
   }
@@ -1088,7 +1089,7 @@ function testCS2019Plan() {
     3,
     ArrayBasket.and("", [
       new StatefulBasket(
-        ArrayBasket.atLeastN("Level 4000", 1, [
+        ArrayBasket.atLeastN("SWE FA at least 1 Level 4000", 1, [
           new ModuleBasket(cs4211),
           new ModuleBasket(cs4218),
           new ModuleBasket(cs4239),
@@ -1096,7 +1097,7 @@ function testCS2019Plan() {
         csSWEFABasketState,
       ),
       new StatefulBasket(
-        ArrayBasket.atLeastN("", 2, [
+        ArrayBasket.atLeastN("SWE FA at least 2 others", 2, [
           swe_cs2103tBasket,
           new ModuleBasket(cs3213),
           new ModuleBasket(cs3219),
@@ -1212,6 +1213,7 @@ function testCS2019Plan() {
     new StatefulBasket(csFoundationBasket, overallDegreeState),
     new StatefulBasket(csBreadthAndDepthBasket, overallDegreeState),
     new StatefulBasket(csTeamProjectBasket, overallDegreeState),
+    new StatefulBasket(csIndustryExpBasket, overallDegreeState),
     new StatefulBasket(csItProfessionalismBasket, overallDegreeState),
     new StatefulBasket(csMathAndSciBasket, overallDegreeState),
     new StatefulBasket(ueBasket, overallDegreeState),
@@ -1237,7 +1239,13 @@ function testCS2019Plan() {
   const ue8 = new Module("UE0008", "", 4);
   const ue9 = new Module("UE0009", "", 4);
 
-  academicPlan.plans[0][0].modules.push(cs1101s, es2660, is1103, ue1, gerxxxx);
+  academicPlan.plans[0][0].modules.push(
+    cs1101s,
+    es2660,
+    is1103,
+    getxxxx,
+    gerxxxx,
+  );
 
   academicPlan.plans[0][1].modules.push(
     cs1231s,
@@ -1260,7 +1268,7 @@ function testCS2019Plan() {
     cs2103t,
     cs2105,
     st2334,
-    getxxxx,
+    cs2101,
     gesxxxx,
   );
 
