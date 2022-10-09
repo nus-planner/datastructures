@@ -189,7 +189,7 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   ): CriterionFulfillmentResult {
     const fulfilled = this.isFulfilled(academicPlan);
     this.criterionState.lastResult.mergeResult(fulfilled);
-    return fulfilled;
+    return this.criterionState.lastResult;
   }
 
   abstract childBaskets(): Array<Basket>;
