@@ -176,7 +176,14 @@ function convertBasketOptionRecord(
 ) {
   const label = Object.keys(basketOptionRecord)[0];
   const basketOption = basketOptionRecord[label] as BasketOption;
-  return convertBasketOption(basketOption, modulesMap, doubleCountSet, states);
+  const basket = convertBasketOption(
+    basketOption,
+    modulesMap,
+    doubleCountSet,
+    states,
+  );
+  basket.name = label;
+  return basket;
 }
 
 export class ConvertedConfig {
