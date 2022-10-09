@@ -120,6 +120,7 @@ class CriterionFulfillmentResult {
     this.matchedModules = matchedModules;
   }
 
+  // This is relatively idempotent
   mergeResult(result: CriterionFulfillmentResult) {
     this.isFulfilled = this.isFulfilled || result.isFulfilled;
     this.matchedMCs = result.matchedMCs;
@@ -138,6 +139,14 @@ class CriterionState {
 }
 
 abstract class BasketEvent {}
+
+class DeferEvent extends BasketEvent {
+  descendant: Basket;
+  constructor(descendant: Basket) {
+    super();
+    this.descendant = descendant;
+  }
+}
 
 class CriterionMatchModuleEvent extends BasketEvent {
   module: Module;
@@ -175,9 +184,16 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   name: string;
   criterionState: CriterionState = new CriterionState();
   parentBasket?: Basket;
+  deferEvaluation: boolean;
+  deferredBaskets: Array<Basket> = [];
 
-  constructor(name: string = "") {
+  constructor(name: string = "", deferEvaluation: boolean = false) {
     this.name = name;
+    this.deferEvaluation = deferEvaluation;
+  }
+
+  isTopLevelBasket(): boolean {
+    return this.parentBasket === undefined;
   }
 
   abstract isFulfilled(
@@ -187,6 +203,16 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   isFulfilledWithState(
     academicPlan: AcademicPlanView,
   ): CriterionFulfillmentResult {
+    /**
+     * This feature of deferredEvaluation is incomplete and is mainly anticipated to be useful to defer
+     * the evaluation of MultiModuleBaskets.
+     * As of now for the CS plan, the workaround is to move MultiModuleBaskets and baskets containing
+     * MultiModuleBaskets as a descendant to be later. (e.g. the csBreadthAndDepthBasket)
+     */
+    if (this.deferEvaluation) {
+      this.sendEventUpwards(new DeferEvent(this));
+      return new CriterionFulfillmentResult(false); // placeholder
+    }
     const fulfilled = this.isFulfilled(academicPlan);
     this.criterionState.lastResult.mergeResult(fulfilled);
     return this.criterionState.lastResult;
@@ -215,6 +241,8 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
     } else if (event instanceof DoubleCountModuleEvent) {
       event.module.state.matchedBaskets.push(this);
       this.criterionState.lastResult.matchedModules.add(event.module);
+    } else if (event instanceof DeferEvent) {
+      this.deferredBaskets.push(event.descendant);
     }
   }
 
@@ -484,6 +512,7 @@ export class MultiModuleBasket extends Basket {
   moduleCodeSuffix?: Set<string>;
   level?: Set<number>;
   requiredMCs?: number;
+  earlyTerminate?: boolean;
   constructor(basket: Partial<MultiModuleBasket>) {
     super();
     this.moduleCodePattern = basket.moduleCodePattern;
@@ -491,6 +520,7 @@ export class MultiModuleBasket extends Basket {
     this.moduleCodeSuffix = basket.moduleCodeSuffix;
     this.level = basket.level;
     this.requiredMCs = basket.requiredMCs;
+    this.earlyTerminate = basket.earlyTerminate ?? true;
   }
 
   childBaskets(): Basket[] {
@@ -498,7 +528,7 @@ export class MultiModuleBasket extends Basket {
   }
 
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult {
-    const filteredModules = academicPlan.getModules().filter((module) => {
+    let filteredModules = academicPlan.getModules().filter((module) => {
       if (this.moduleCodePattern && !this.moduleCodePattern.test(module.code)) {
         return false;
       }
@@ -523,6 +553,20 @@ export class MultiModuleBasket extends Basket {
 
       return true;
     });
+
+    if (this.earlyTerminate && this.requiredMCs !== undefined) {
+      // Heuristic: prioritize modules with smaller number of credits
+      filteredModules.sort((a, b) => a.credits - b.credits);
+      const justEnoughModulesForMCs = [];
+      for (
+        let i = 0, mcs = 0;
+        i < filteredModules.length && mcs < this.requiredMCs;
+        i++, mcs += filteredModules[i].credits
+      ) {
+        justEnoughModulesForMCs.push(filteredModules[i]);
+      }
+      filteredModules = justEnoughModulesForMCs;
+    }
 
     for (const module of filteredModules) {
       this.sendEventUpwards(new CriterionMatchModuleEvent(module));
@@ -1216,10 +1260,10 @@ function testCS2019Plan() {
   const csDegree = ArrayBasket.and("CS Degree", [
     new StatefulBasket(ulrBasket, overallDegreeState),
     new StatefulBasket(csFoundationBasket, overallDegreeState),
-    new StatefulBasket(csBreadthAndDepthBasket, overallDegreeState),
     new StatefulBasket(csTeamProjectBasket, overallDegreeState),
     new StatefulBasket(csIndustryExpBasket, overallDegreeState),
     new StatefulBasket(csItProfessionalismBasket, overallDegreeState),
+    new StatefulBasket(csBreadthAndDepthBasket, overallDegreeState),
     new StatefulBasket(csMathAndSciBasket, overallDegreeState),
     new StatefulBasket(ueBasket, overallDegreeState),
   ]);
