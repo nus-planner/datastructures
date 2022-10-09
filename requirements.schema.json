@@ -2,6 +2,24 @@
   "type": "object",
   "patternProperties": {
     "^.*$": {
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "This creates a StatefulBasket. TODO: Make this message more user friendly?"
+        },
+        "description": {
+          "type": "string",
+          "description": "A text description of this requirement"
+        },
+        "at_least_n_mcs": {
+          "type": "number",
+          "description": "At least a certain number of MCs fulfilled"
+        },
+        "at_least_n_modules": {
+          "type": "number",
+          "description": "At least a certain number of modules fulfilled"
+        }
+      },
       "anyOf": [
         {
           "type": "object",
@@ -66,6 +84,14 @@
                   "description": "Module code",
                   "type": "string"
                 },
+                "code_prefix": {
+                  "description": "Module code prefix",
+                  "type": "string"
+                },
+                "code_suffix": {
+                  "description": "Module code suffix",
+                  "type": "string"
+                },
                 "code_pattern": {
                   "desription": "Regex filter of module code",
                   "type": "string"
@@ -77,6 +103,12 @@
                 "double_count": {
                   "type": "boolean",
                   "default": false
+                },
+                "required_mcs": {
+                  "type": "number"
+                },
+                "early_terminate": {
+                  "type": "boolean"
                 }
               }
             }

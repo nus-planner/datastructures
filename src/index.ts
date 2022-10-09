@@ -140,14 +140,6 @@ class CriterionState {
 
 abstract class BasketEvent {}
 
-class DeferEvent extends BasketEvent {
-  descendant: Basket;
-  constructor(descendant: Basket) {
-    super();
-    this.descendant = descendant;
-  }
-}
-
 class CriterionMatchModuleEvent extends BasketEvent {
   module: Module;
   constructor(module: Module) {
@@ -184,12 +176,9 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   name: string;
   criterionState: CriterionState = new CriterionState();
   parentBasket?: Basket;
-  deferEvaluation: boolean;
-  deferredBaskets: Array<Basket> = [];
 
-  constructor(name: string = "", deferEvaluation: boolean = false) {
+  constructor(name: string = "") {
     this.name = name;
-    this.deferEvaluation = deferEvaluation;
   }
 
   isTopLevelBasket(): boolean {
@@ -203,16 +192,6 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   isFulfilledWithState(
     academicPlan: AcademicPlanView,
   ): CriterionFulfillmentResult {
-    /**
-     * This feature of deferredEvaluation is incomplete and is mainly anticipated to be useful to defer
-     * the evaluation of MultiModuleBaskets.
-     * As of now for the CS plan, the workaround is to move MultiModuleBaskets and baskets containing
-     * MultiModuleBaskets as a descendant to be later. (e.g. the csBreadthAndDepthBasket)
-     */
-    if (this.deferEvaluation) {
-      this.sendEventUpwards(new DeferEvent(this));
-      return new CriterionFulfillmentResult(false); // placeholder
-    }
     const fulfilled = this.isFulfilled(academicPlan);
     this.criterionState.lastResult.mergeResult(fulfilled);
     return this.criterionState.lastResult;
@@ -241,8 +220,6 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
     } else if (event instanceof DoubleCountModuleEvent) {
       event.module.state.matchedBaskets.push(this);
       this.criterionState.lastResult.matchedModules.add(event.module);
-    } else if (event instanceof DeferEvent) {
-      this.deferredBaskets.push(event.descendant);
     }
   }
 
@@ -288,7 +265,7 @@ class PrintableBasket {
   }
 }
 
-class BasketState {
+export class BasketState {
   moduleCodesAlreadyMatched: Set<string>;
   constructor(moduleCodesAlreadyMatched: Set<string> = new Set()) {
     this.moduleCodesAlreadyMatched = moduleCodesAlreadyMatched;
@@ -611,6 +588,8 @@ export class SemPlan {
 
 export type SemOnePlan = SemPlan;
 export type SemTwoPlan = SemPlan;
+export type SpecialTermOnePlan = SemPlan;
+export type SpecialTermTwoPlan = SemPlan;
 
 export class AcademicPlanView {
   private academicPlan: AcademicPlan;
@@ -641,7 +620,9 @@ export class AcademicPlanView {
 }
 
 export class AcademicPlan {
-  plans: Array<[SemOnePlan, SemTwoPlan]>;
+  plans: Array<
+    [SemOnePlan, SemTwoPlan, SpecialTermOnePlan, SpecialTermTwoPlan]
+  >;
 
   private modules: Array<Module> = [];
   private moduleCodeToModuleMap: Map<string, Module> = new Map();
@@ -649,7 +630,12 @@ export class AcademicPlan {
   constructor(numYears: number) {
     this.plans = new Array(numYears);
     for (let i = 0; i < numYears; i++) {
-      this.plans[i] = [new SemPlan([]), new SemPlan([])];
+      this.plans[i] = [
+        new SemPlan([]),
+        new SemPlan([]),
+        new SemPlan([]),
+        new SemPlan([]),
+      ];
     }
   }
 
@@ -657,7 +643,7 @@ export class AcademicPlan {
     this.modules = [];
     this.moduleCodeToModuleMap.clear();
     for (const plan of this.plans) {
-      for (const module of [...plan[0].modules, ...plan[1].modules]) {
+      for (const module of plan.flatMap((semPlan) => semPlan.modules)) {
         this.modules.push(module);
         this.moduleCodeToModuleMap.set(module.code, module);
       }
@@ -997,11 +983,11 @@ function testAppliedMathsPlan() {
   log.log(appliedMathBasket);
 }
 
-function testCS2019Plan() {
+function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
   // ULR
   const gehxxxx = new Module("GEH0000", "", 4);
-  const geqxxxx = new Module("GEQ0000", "", 4);
-  const gerxxxx = new Module("GER0000", "", 4);
+  const geqxxxx = new Module("GEQ1000", "", 4);
+  const gerxxxx = new Module("GER1000", "", 4);
   const gesxxxx = new Module("GES0000", "", 4);
   const getxxxx = new Module("GET0000", "", 4);
 
@@ -1016,14 +1002,15 @@ function testCS2019Plan() {
   const ueBasket = new MultiModuleBasket({
     moduleCodePattern: /./,
     requiredMCs: 32,
+    earlyTerminate: false,
   });
 
   // CS Foundation
   const cs1101s = new Module("CS1101S", "", 4);
   const cs1010x = new Module("CS1010X", "", 4);
-  const cs1231s = new Module("CS1231s", "", 4);
-  const cs2030s = new Module("CS2030s", "", 4);
-  const cs2040s = new Module("CS2040s", "", 4);
+  const cs1231s = new Module("CS1231S", "", 4);
+  const cs2030s = new Module("CS2030S", "", 4);
+  const cs2040s = new Module("CS2040S", "", 4);
   const cs2100 = new Module("CS2100", "", 4);
   const cs2103t = new Module("CS2103T", "", 4);
   const cs2105 = new Module("CS2105", "", 4);
@@ -1268,14 +1255,18 @@ function testCS2019Plan() {
     new StatefulBasket(ueBasket, overallDegreeState),
   ]);
 
-  const config = new input.ConvertedConfig();
-  config.basket = csDegree;
-  config.doubleCountedModules = new Map();
-  config.doubleCountedModules.set("CS2103T", [
-    foundation_cs2103tBasket,
-    swe_cs2103tBasket,
-  ]);
-
+  let config: input.ConvertedConfig;
+  if (useRequirementsJSONOrYAML) {
+    config = input.testLoadRequirements();
+  } else {
+    config = new input.ConvertedConfig();
+    config.basket = csDegree;
+    config.doubleCountedModules = new Map();
+    config.doubleCountedModules.set("CS2103T", [
+      foundation_cs2103tBasket,
+      swe_cs2103tBasket,
+    ]);
+  }
   const academicPlan = new AcademicPlan(4);
   // Dummy UE
   const ue1 = new Module("UE0001", "", 4);
@@ -1346,6 +1337,6 @@ function testCS2019Plan() {
   log.log(config.basket.getPrintableClone(3));
 }
 
-testCS2019Plan();
+testCS2019Plan(true);
 
 export {};

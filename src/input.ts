@@ -3,17 +3,21 @@ import * as fs from "fs";
 import * as baskets from ".";
 import * as log from "./log";
 
-type WithDescription<T> = T & { description?: string };
+type Shared<T> = T & { description?: string; state?: string };
 
 type ModuleCode = string;
 type ModuleBasket = {
   code?: string;
   code_pattern?: string;
+  code_prefix?: string;
+  code_suffix?: string;
   level?: number;
   double_count?: boolean;
+  required_mcs?: number;
+  early_terminate?: boolean;
 };
 
-type BasketOption = WithDescription<
+type BasketOption = Shared<
   | { at_least_n_of: { n: number; baskets: ArrayBasket } }
   | {
       and: ArrayBasket;
@@ -49,18 +53,21 @@ function convertArrayBasketElement(
   arrayBasketElement: ArrayBasketElement,
   modulesMap: Map<string, baskets.Module>,
   doubleCountSet: Map<string, Array<baskets.ModuleBasket>>,
+  states: Map<string, baskets.BasketState>,
 ): baskets.Basket {
   if (typeof arrayBasketElement === "string") {
     return convertBasketOption(
       { description: "", module: { code: arrayBasketElement } },
       modulesMap,
       doubleCountSet,
+      states,
     );
   } else {
     return convertBasketOptionRecord(
       arrayBasketElement,
       modulesMap,
       doubleCountSet,
+      states,
     );
   }
 }
@@ -69,46 +76,71 @@ function convertBasketOption(
   basketOption: BasketOption,
   modulesMap: Map<string, baskets.Module>,
   doubleCountSet: Map<string, Array<baskets.ModuleBasket>>,
+  states: Map<string, baskets.BasketState>,
 ): baskets.Basket {
+  let basket: baskets.Basket;
   if ("and" in basketOption) {
     const basketElements = basketOption.and.map((arrayBasketElement) =>
-      convertArrayBasketElement(arrayBasketElement, modulesMap, doubleCountSet),
+      convertArrayBasketElement(
+        arrayBasketElement,
+        modulesMap,
+        doubleCountSet,
+        states,
+      ),
     );
-    return baskets.ArrayBasket.and(
+    basket = baskets.ArrayBasket.and(
       basketOption.description || "",
       basketElements,
     );
   } else if ("or" in basketOption) {
     const basketElements = basketOption.or.map((arrayBasketElement) =>
-      convertArrayBasketElement(arrayBasketElement, modulesMap, doubleCountSet),
+      convertArrayBasketElement(
+        arrayBasketElement,
+        modulesMap,
+        doubleCountSet,
+        states,
+      ),
     );
-    return baskets.ArrayBasket.or("", basketElements);
+    basket = baskets.ArrayBasket.or("", basketElements);
   } else if ("module" in basketOption) {
-    let basket;
     if (basketOption.module.code) {
-      basket = new baskets.ModuleBasket(
+      const moduleBasket = new baskets.ModuleBasket(
         getAndAddIfNotExists(modulesMap, basketOption.module.code),
       );
+      basket = moduleBasket;
       if (basketOption.module.double_count) {
         if (!doubleCountSet.has(basketOption.module.code)) {
           doubleCountSet.set(basketOption.module.code, []);
         }
-        doubleCountSet.get(basketOption.module.code)!.push(basket);
+        doubleCountSet.get(basketOption.module.code)!.push(moduleBasket);
       }
-    } else if (basketOption.module.code_pattern !== undefined) {
+    } else if (
+      basketOption.module.code_prefix !== undefined ||
+      basketOption.module.code_suffix !== undefined ||
+      basketOption.module.code_pattern !== undefined ||
+      basketOption.module.level
+    ) {
       basket = new baskets.MultiModuleBasket({
-        moduleCodePattern: new RegExp(basketOption.module.code_pattern),
-      });
-    } else if (basketOption.module.level) {
-      basket = new baskets.MultiModuleBasket({
-        level: new Set([basketOption.module.level / 1000]),
+        moduleCodePrefix: basketOption.module.code_prefix
+          ? new Set([basketOption.module.code_prefix])
+          : undefined,
+        moduleCodeSuffix: basketOption.module.code_suffix
+          ? new Set([basketOption.module.code_suffix])
+          : undefined,
+        moduleCodePattern: basketOption.module.code_pattern
+          ? new RegExp(basketOption.module.code_pattern)
+          : undefined,
+        level: basketOption.module.level
+          ? new Set([basketOption.module.level / 1000])
+          : undefined,
+        requiredMCs: basketOption.module.required_mcs,
+        earlyTerminate: basketOption.module.early_terminate,
       });
     } else {
       throw new Error(
         "At least one Module parameter must be given by the config.",
       );
     }
-    return basket;
   } else if ("at_least_n_of" in basketOption) {
     const basketElements = basketOption.at_least_n_of.baskets.map(
       (arrayBasketElement) =>
@@ -116,9 +148,10 @@ function convertBasketOption(
           arrayBasketElement,
           modulesMap,
           doubleCountSet,
+          states,
         ),
     );
-    return baskets.ArrayBasket.atLeastN(
+    basket = baskets.ArrayBasket.atLeastN(
       basketOption.description || "",
       basketOption.at_least_n_of.n,
       basketElements,
@@ -126,27 +159,40 @@ function convertBasketOption(
   } else {
     throw new Error("Malformed config");
   }
+  if ("state" in basketOption && basketOption.state) {
+    if (!states.has(basketOption.state)) {
+      states.set(basketOption.state, new baskets.BasketState());
+    }
+    basket = new baskets.StatefulBasket(basket, states.get(basketOption.state));
+  }
+  return basket;
 }
 
 function convertBasketOptionRecord(
   basketOptionRecord: BasketOptionRecord,
   modulesMap: Map<string, baskets.Module>,
   doubleCountSet: Map<string, Array<baskets.ModuleBasket>>,
+  states: Map<string, baskets.BasketState>,
 ) {
   const label = Object.keys(basketOptionRecord)[0];
   const basketOption = basketOptionRecord[label] as BasketOption;
-  return convertBasketOption(basketOption, modulesMap, doubleCountSet);
+  return convertBasketOption(basketOption, modulesMap, doubleCountSet, states);
 }
 
 export class ConvertedConfig {
+  // If I'm not wrong, removing this declare would cause a cyclical dependency
+  // A better thing to do is to move all baskets into some file like basket.ts to break the circular dependency between
+  // index.ts and input.ts
   declare static placeholderBasket: baskets.Basket;
   basket: baskets.Basket;
   allModules: Map<string, baskets.Module>;
   doubleCountedModules: Map<string, Array<baskets.ModuleBasket>>;
+  states: Map<string, baskets.BasketState>;
   constructor() {
     this.basket = ConvertedConfig.placeholderBasket;
     this.allModules = new Map();
     this.doubleCountedModules = new Map();
+    this.states = new Map();
   }
 }
 
@@ -158,13 +204,16 @@ export function convertConfigBasket(
     topLevelBasket,
     convertedConfig.allModules,
     convertedConfig.doubleCountedModules,
+    convertedConfig.states,
   );
   return convertedConfig;
 }
 
-// const topLevelBasket = yaml.load(
-//   fs.readFileSync("./requirements.json", "utf8"),
-// ) as TopLevelBasket;
-// log.log(topLevelBasket);
-// const convertedBasket = convertConfigBasket(topLevelBasket);
-// log.log(convertedBasket);
+export function testLoadRequirements() {
+  const topLevelBasket = yaml.load(
+    fs.readFileSync("./requirements.json", "utf8"),
+  ) as TopLevelBasket;
+
+  const convertedBasket = convertConfigBasket(topLevelBasket);
+  return convertedBasket;
+}
