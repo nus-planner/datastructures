@@ -214,7 +214,6 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
       event.module.state.matchedBaskets.push(this);
     } else if (event instanceof DoubleCountModuleEvent) {
       event.module.state.matchedBaskets.push(this);
-      this.criterionState.lastResult.isFulfilled = true;
       this.criterionState.lastResult.matchedModules.add(event.module);
     }
   }
@@ -474,6 +473,7 @@ export class ModuleBasket extends Basket {
   }
 
   doubleCount() {
+    this.criterionState.lastResult.isFulfilled = true;
     this.sendEventUpwards(new DoubleCountModuleEvent(this.module));
   }
 }
@@ -523,6 +523,10 @@ export class MultiModuleBasket extends Basket {
 
       return true;
     });
+
+    for (const module of filteredModules) {
+      this.sendEventUpwards(new CriterionMatchModuleEvent(module));
+    }
 
     let totalMCs = 0;
     for (const module of filteredModules) {
@@ -606,6 +610,7 @@ export class AcademicPlan {
   }
 
   preprocess() {
+    this.modules = [];
     this.moduleCodeToModuleMap.clear();
     for (const plan of this.plans) {
       for (const module of [...plan[0].modules, ...plan[1].modules]) {
