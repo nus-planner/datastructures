@@ -3,7 +3,11 @@ import * as fs from "fs";
 import * as baskets from ".";
 import * as log from "./log";
 
-type Shared<T> = T & { description?: string; state?: string };
+type Shared<T> = T & {
+  description?: string;
+  state?: string;
+  at_least_n_mcs?: number;
+};
 
 type ModuleCode = string;
 type ModuleBasket = {
@@ -159,12 +163,22 @@ function convertBasketOption(
   } else {
     throw new Error("Malformed config");
   }
-  if ("state" in basketOption && basketOption.state) {
+
+  if (basketOption.at_least_n_mcs !== undefined) {
+    basket = baskets.FulfillmentResultBasket.atLeastNMCs(
+      "",
+      basketOption.at_least_n_mcs,
+      basket,
+    );
+  }
+
+  if (basketOption.state) {
     if (!states.has(basketOption.state)) {
       states.set(basketOption.state, new baskets.BasketState());
     }
     basket = new baskets.StatefulBasket(basket, states.get(basketOption.state));
   }
+
   return basket;
 }
 
