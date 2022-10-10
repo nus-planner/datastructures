@@ -1083,8 +1083,8 @@ function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
 
   const csIndustryExpBasket = ArrayBasket.or("CS Industry Experience", [
     new ModuleBasket(cp3880),
-    ArrayBasket.or("", [new ModuleBasket(cp3200), new ModuleBasket(cp3202)]),
-    ArrayBasket.or("", [new ModuleBasket(cp3107), new ModuleBasket(cp3110)]),
+    ArrayBasket.and("", [new ModuleBasket(cp3200), new ModuleBasket(cp3202)]),
+    ArrayBasket.and("", [new ModuleBasket(cp3107), new ModuleBasket(cp3110)]),
     new ModuleBasket(is4010),
     new ModuleBasket(tr3203),
   ]);
@@ -1231,13 +1231,11 @@ function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
         csBreadthAndDepthState,
       ),
       new StatefulBasket(
-        FulfillmentResultBasket.atLeastNMCs(
-          "",
-          12,
-          new MultiModuleBasket({
-            moduleCodePrefix: new Set(["CS"]),
-          }),
-        ),
+        new MultiModuleBasket({
+          moduleCodePrefix: new Set(["CS"]),
+          requiredMCs: 4,
+          earlyTerminate: false,
+        }),
         /* All CS coded modules */ csBreadthAndDepthState,
       ),
     ]),
@@ -1285,6 +1283,7 @@ function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
     is1103,
     getxxxx,
     gerxxxx,
+    pc1221,
   );
 
   academicPlan.plans[0][1].modules.push(
@@ -1329,14 +1328,22 @@ function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
   academicPlan.plans[2][1].modules.push(cs4218, cs3230, cs5321, cs4222);
 
   academicPlan.plans[3][0].modules.push(cs3216, ue2, ue3, ue4, ue5);
-  academicPlan.plans[3][1].modules.push(cs3217, ue6, ue7, ue8, ue9);
+  academicPlan.plans[3][1].modules.push(
+    cs3217,
+    ue6,
+    ue7,
+    ue8,
+    ue9,
+    cp3200,
+    cp3202,
+  );
 
   const result = academicPlan.checkAgainstConfig(config);
   // log.log(result);
   // log.log(csDegree);
-  log.log(config.basket.getPrintableClone(3));
+  log.log(config.basket.getPrintableClone(7));
 }
 
-testCS2019Plan(true);
+testCS2019Plan(false);
 
 export {};
