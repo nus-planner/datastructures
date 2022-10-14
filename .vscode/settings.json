@@ -1,11 +1,19 @@
 {
   "yaml.schemas": {
-    "requirements.schema.json": "*requirements.yaml"
+    "schemas/requirements.schema.json": "*requirements.yaml"
   },
   "json.schemas": [
     {
-      "fileMatch": ["*requirements.json"],
-      "url": "./requirements.schema.json"
+      "fileMatch": [
+        "*requirements.json",
+        "/requirements/*.json",
+        "!/requirements/dir.*"
+      ],
+      "url": "/schemas/requirements.schema.json"
+    },
+    {
+      "fileMatch": ["/requirements/dir.json"],
+      "url": "/schemas/dir.schema.json"
     }
   ]
 }

@@ -3,11 +3,16 @@ import * as fs from "fs";
 import * as baskets from ".";
 import * as log from "./log";
 
-type Shared<T> = T & { description?: string; state?: string };
+type Shared<T> = T & {
+  description?: string;
+  state?: string;
+  at_least_n_mcs?: number;
+};
 
 type ModuleCode = string;
 type ModuleBasket = {
   code?: string;
+  mc?: number;
   code_pattern?: string;
   code_prefix?: string;
   code_suffix?: string;
@@ -41,9 +46,10 @@ type TopLevelBasket = BasketOptionRecord;
 function getAndAddIfNotExists(
   map: Map<string, baskets.Module>,
   moduleCode: string,
+  mc: number = 4,
 ) {
   if (!map.has(moduleCode)) {
-    map.set(moduleCode, new baskets.Module(moduleCode, "", 4)); // TODO
+    map.set(moduleCode, new baskets.Module(moduleCode, "", mc)); // TODO
   }
 
   return map.get(moduleCode)!;
@@ -105,7 +111,11 @@ function convertBasketOption(
   } else if ("module" in basketOption) {
     if (basketOption.module.code) {
       const moduleBasket = new baskets.ModuleBasket(
-        getAndAddIfNotExists(modulesMap, basketOption.module.code),
+        getAndAddIfNotExists(
+          modulesMap,
+          basketOption.module.code,
+          basketOption.module.mc,
+        ),
       );
       basket = moduleBasket;
       if (basketOption.module.double_count) {
@@ -159,12 +169,22 @@ function convertBasketOption(
   } else {
     throw new Error("Malformed config");
   }
-  if ("state" in basketOption && basketOption.state) {
+
+  if (basketOption.at_least_n_mcs !== undefined) {
+    basket = baskets.FulfillmentResultBasket.atLeastNMCs(
+      "",
+      basketOption.at_least_n_mcs,
+      basket,
+    );
+  }
+
+  if (basketOption.state) {
     if (!states.has(basketOption.state)) {
       states.set(basketOption.state, new baskets.BasketState());
     }
     basket = new baskets.StatefulBasket(basket, states.get(basketOption.state));
   }
+
   return basket;
 }
 

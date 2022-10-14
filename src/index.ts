@@ -130,14 +130,6 @@ class CriterionFulfillmentResult {
   }
 }
 
-class CriterionState {
-  lastResult: CriterionFulfillmentResult = new CriterionFulfillmentResult();
-
-  mergeState(state: CriterionState) {
-    this.lastResult.mergeResult(state.lastResult);
-  }
-}
-
 abstract class BasketEvent {}
 
 class CriterionMatchModuleEvent extends BasketEvent {
@@ -163,7 +155,7 @@ interface CriterionEventDelegate {
 export type Constructor<T> = new (...args: any) => T;
 
 export interface Criterion {
-  criterionState: CriterionState;
+  criterionState: CriterionFulfillmentResult;
   eventDelegate?: CriterionEventDelegate;
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult;
 }
@@ -174,7 +166,7 @@ export interface Criterion {
 
 export abstract class Basket implements Criterion, CriterionEventDelegate {
   name: string;
-  criterionState: CriterionState = new CriterionState();
+  criterionState: CriterionFulfillmentResult = new CriterionFulfillmentResult();
   parentBasket?: Basket;
 
   constructor(name: string = "") {
@@ -193,14 +185,14 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
     academicPlan: AcademicPlanView,
   ): CriterionFulfillmentResult {
     const fulfilled = this.isFulfilled(academicPlan);
-    this.criterionState.lastResult.mergeResult(fulfilled);
-    return this.criterionState.lastResult;
+    this.criterionState.mergeResult(fulfilled);
+    return this.criterionState;
   }
 
   abstract childBaskets(): Array<Basket>;
 
   resetSubtreeState() {
-    this.criterionState = new CriterionState();
+    this.criterionState = new CriterionFulfillmentResult();
     this.childBaskets().forEach((basket) => basket.resetSubtreeState());
   }
 
@@ -219,7 +211,7 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
       event.module.state.matchedBaskets.push(this);
     } else if (event instanceof DoubleCountModuleEvent) {
       event.module.state.matchedBaskets.push(this);
-      this.criterionState.lastResult.matchedModules.add(event.module);
+      this.criterionState.matchedModules.add(event.module);
     }
   }
 
@@ -246,10 +238,10 @@ class PrintableCriterionState {
   isFulfilled: boolean;
   matchedMCs: number;
   matchedModules: Array<string> = [];
-  constructor(criterionState: CriterionState) {
-    this.isFulfilled = criterionState.lastResult.isFulfilled;
-    this.matchedMCs = criterionState.lastResult.matchedMCs;
-    for (const module of criterionState.lastResult.matchedModules) {
+  constructor(criterionState: CriterionFulfillmentResult) {
+    this.isFulfilled = criterionState.isFulfilled;
+    this.matchedMCs = criterionState.matchedMCs;
+    for (const module of criterionState.matchedModules) {
       this.matchedModules.push(module.code);
     }
   }
@@ -374,8 +366,8 @@ export class ArrayBasket extends Basket {
     let totalMCs = 0;
     const allMatchedModules = new Set<Module>();
     for (let basket of this.baskets) {
-      totalMCs += basket.criterionState.lastResult.matchedMCs;
-      for (const module of basket.criterionState.lastResult.matchedModules) {
+      totalMCs += basket.criterionState.matchedMCs;
+      for (const module of basket.criterionState.matchedModules) {
         allMatchedModules.add(module);
       }
     }
@@ -478,7 +470,7 @@ export class ModuleBasket extends Basket {
   }
 
   doubleCount() {
-    this.criterionState.lastResult.isFulfilled = true;
+    this.criterionState.isFulfilled = true;
     this.sendEventUpwards(new DoubleCountModuleEvent(this.module));
   }
 }
@@ -674,7 +666,7 @@ export class AcademicPlan {
       }
     }
 
-    this.checkAgainstBasket(config.basket);
+    return this.checkAgainstBasket(config.basket);
   }
 
   checkAgainstBasket(basket: Basket): boolean {

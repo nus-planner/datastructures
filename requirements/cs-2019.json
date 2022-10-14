@@ -2,11 +2,7 @@
   "CS-2019": {
     "and": [
       {
-<<<<<<< HEAD
-        "ULR": {
-=======
         "ulr": {
->>>>>>> main
           "state": "overallDegreeState",
           "description": "University Level Requirements",
           "and": [
@@ -99,12 +95,12 @@
             "CP3880",
             {
               "": {
-                "and": ["CP3200", "CP3202"]
+                "or": ["CP3200", "CP3202"]
               }
             },
             {
               "": {
-                "and": ["CP3107", "CP3110"]
+                "or": ["CP3107", "CP3110"]
               }
             },
             "IS4010",
