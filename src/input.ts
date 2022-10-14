@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import * as fs from "fs";
-import * as baskets from ".";
+import * as baskets from "./basket";
 import * as log from "./log";
 
 type Shared<T> = T & {
