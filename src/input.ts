@@ -12,6 +12,7 @@ type Shared<T> = T & {
 type ModuleCode = string;
 type ModuleBasket = {
   code?: string;
+  mc?: number;
   code_pattern?: string;
   code_prefix?: string;
   code_suffix?: string;
@@ -45,9 +46,10 @@ type TopLevelBasket = BasketOptionRecord;
 function getAndAddIfNotExists(
   map: Map<string, baskets.Module>,
   moduleCode: string,
+  mc: number = 4,
 ) {
   if (!map.has(moduleCode)) {
-    map.set(moduleCode, new baskets.Module(moduleCode, "", 4)); // TODO
+    map.set(moduleCode, new baskets.Module(moduleCode, "", mc)); // TODO
   }
 
   return map.get(moduleCode)!;
@@ -109,7 +111,11 @@ function convertBasketOption(
   } else if ("module" in basketOption) {
     if (basketOption.module.code) {
       const moduleBasket = new baskets.ModuleBasket(
-        getAndAddIfNotExists(modulesMap, basketOption.module.code),
+        getAndAddIfNotExists(
+          modulesMap,
+          basketOption.module.code,
+          basketOption.module.mc,
+        ),
       );
       basket = moduleBasket;
       if (basketOption.module.double_count) {
