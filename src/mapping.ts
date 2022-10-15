@@ -1,12 +1,13 @@
 import * as frontend from "./frontend";
 import * as basket from "./basket";
-
+import * as input from "./input";
+import * as plan from "./plan";
 class ModuleViewModel implements frontend.Module {
   color?: string | undefined;
   editable?: boolean | undefined;
   prereqs?: frontend.PrereqTree | undefined;
   prereqsViolated?: string[][] | undefined;
-  private module: basket.Module;
+  module: plan.Module;
 
   public get code(): string {
     return this.module.code;
@@ -20,8 +21,22 @@ class ModuleViewModel implements frontend.Module {
     return this.module.credits;
   }
 
-  constructor(module: basket.Module) {
+  constructor(module: plan.Module) {
     this.module = module;
+  }
+}
+
+class MultiModuleViewModel implements frontend.Module {
+  color?: string | undefined;
+  code!: string;
+  name!: string;
+  credits!: number;
+  editable?: boolean | undefined;
+  prereqs?: frontend.PrereqTree | undefined;
+  prereqsViolated?: string[][] | undefined;
+
+  constructor(model: MultiModuleViewModel) {
+    Object.assign(this, model);
   }
 }
 
@@ -49,14 +64,12 @@ class BasketFlattener extends basket.BasketVisitor<Array<ModuleSpecifier>> {
 }
 
 class RequirementViewModel implements frontend.Requirement {
-  description: string;
   totalCredits: number;
   modules: frontend.Module[];
   private basket: basket.Basket;
 
   constructor(basket: basket.Basket) {
     this.basket = basket;
-    this.description = "TODO";
     this.totalCredits = -1; // I don't think this is possible?
     this.modules = new BasketFlattener()
       .visit(basket)
@@ -64,11 +77,11 @@ class RequirementViewModel implements frontend.Requirement {
         if ("module" in basket) {
           return new ModuleViewModel(basket.module);
         } else {
-          return {
+          return new MultiModuleViewModel({
             code: basket.getEffectivePattern(),
             credits: -1,
             name: "Select A Basket",
-          };
+          });
         }
       });
   }
@@ -76,15 +89,49 @@ class RequirementViewModel implements frontend.Requirement {
   public get title(): string {
     return this.basket.title;
   }
+
+  public get description(): string {
+    return this.basket.description || "";
+  }
 }
 
-class SemesterViewModel implements frontend.Semester {
-  year: number;
-  semester: number;
-  modules: frontend.Module[];
-  constructor(semPlan: basket.SemPlan) {
-    this.year = semPlan.year;
-    this.semester = semPlan.semester;
-    this.modules = semPlan.modules.map((module) => new ModuleViewModel(module));
+class MainViewModel implements frontend.ModulesState {
+  private _requirements?: Array<RequirementViewModel>;
+  private academicPlan: plan.AcademicPlan;
+  private validatorState: input.ValidatorState;
+
+  constructor(startYear: number, numYears = 4) {
+    this.academicPlan = new plan.AcademicPlan(startYear, numYears);
+    this.validatorState = new input.ValidatorState();
+  }
+
+  public get planner() {
+    return this.academicPlan.plans;
+  }
+
+  public get requirements(): Array<RequirementViewModel> {
+    if (this.validatorState.isUninitialized()) {
+      return [];
+    }
+
+    if (this._requirements === undefined) {
+      this._requirements = this.validatorState.basket
+        .childBaskets()
+        .map((basket) => new RequirementViewModel(basket));
+    }
+
+    return this._requirements;
+  }
+
+  get modulesMap(): Map<string, plan.Module> {
+    return this.validatorState.allModules;
+  }
+
+  public get startYear(): string {
+    return this.academicPlan.startYear.toString();
+  }
+
+  initializeFromURL(url: string) {
+    this.validatorState.initializeFromURL(url);
   }
 }
