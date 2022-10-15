@@ -49,13 +49,13 @@ class BasketFlattener extends basket.BasketVisitor<Array<ModuleSpecifier>> {
 }
 
 class RequirementViewModel implements frontend.Requirement {
-  title: string;
   description: string;
   totalCredits: number;
   modules: frontend.Module[];
+  private basket: basket.Basket;
 
   constructor(basket: basket.Basket) {
-    this.title = basket.name;
+    this.basket = basket;
     this.description = "TODO";
     this.totalCredits = -1; // I don't think this is possible?
     this.modules = new BasketFlattener()
@@ -71,6 +71,10 @@ class RequirementViewModel implements frontend.Requirement {
           };
         }
       });
+  }
+
+  public get title(): string {
+    return this.basket.title;
   }
 }
 

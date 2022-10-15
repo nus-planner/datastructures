@@ -4,11 +4,11 @@
       {
         "ulr": {
           "state": "overallDegreeState",
-          "description": "University Level Requirements",
+          "title": "University Level Requirements",
           "and": [
             {
               "geh": {
-                "description": "GEH modules",
+                "title": "GEH modules",
                 "module": {
                   "code_pattern": "^GEH"
                 }
@@ -18,7 +18,7 @@
             "GER1000",
             {
               "ges": {
-                "description": "GES modules",
+                "title": "GES modules",
                 "module": {
                   "code_pattern": "^GES"
                 }

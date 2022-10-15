@@ -4,11 +4,11 @@
       {
         "ulr": {
           "state": "overallDegreeState",
-          "description": "University Level Requirements",
+          "title": "University Level Requirements",
           "and": [
             {
               "geh": {
-                "description": "GEH modules",
+                "title": "GEH modules",
                 "module": {
                   "code_pattern": "^GEH"
                 }
@@ -18,7 +18,7 @@
             "GER1000",
             {
               "ges": {
-                "description": "GES modules",
+                "title": "GES modules",
                 "module": {
                   "code_pattern": "^GES"
                 }
@@ -37,7 +37,7 @@
       {
         "fac": {
           "state": "overallDegreeState",
-          "description": "Faculty Requirements",
+          "title": "Faculty Requirements",
           "and": [
             "ES2531",
             {
@@ -51,7 +51,7 @@
       {
         "maj": {
           "state": "overallDegreeState",
-          "description": "Major Requirements",
+          "title": "Major Requirements",
           "and": [
             {
               "Foundational Requirements": {
@@ -156,7 +156,7 @@
       {
         "ue": {
           "state": "overallDegreeState",
-          "description": "Unrestricted Electives",
+          "title": "Unrestricted Electives",
           "module": {
             "code_pattern": ".",
             "required_mcs": 8,

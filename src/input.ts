@@ -4,6 +4,7 @@ import * as baskets from "./basket";
 import * as log from "./log";
 
 type Shared<T> = T & {
+  title?: string;
   description?: string;
   state?: string;
   at_least_n_mcs?: number;
@@ -63,7 +64,7 @@ function convertArrayBasketElement(
 ): baskets.Basket {
   if (typeof arrayBasketElement === "string") {
     return convertBasketOption(
-      { description: "", module: { code: arrayBasketElement } },
+      { title: "", module: { code: arrayBasketElement } },
       modulesMap,
       doubleCountSet,
       states,
@@ -94,10 +95,7 @@ function convertBasketOption(
         states,
       ),
     );
-    basket = baskets.ArrayBasket.and(
-      basketOption.description || "",
-      basketElements,
-    );
+    basket = baskets.ArrayBasket.and(basketOption.title || "", basketElements);
   } else if ("or" in basketOption) {
     const basketElements = basketOption.or.map((arrayBasketElement) =>
       convertArrayBasketElement(
@@ -162,7 +160,7 @@ function convertBasketOption(
         ),
     );
     basket = baskets.ArrayBasket.atLeastN(
-      basketOption.description || "",
+      basketOption.title || "",
       basketOption.at_least_n_of.n,
       basketElements,
     );
@@ -185,6 +183,10 @@ function convertBasketOption(
     basket = new baskets.StatefulBasket(basket, states.get(basketOption.state));
   }
 
+  if (basketOption.description) {
+    basket.description = basketOption.description;
+  }
+
   return basket;
 }
 
@@ -202,7 +204,7 @@ function convertBasketOptionRecord(
     doubleCountSet,
     states,
   );
-  basket.name = label;
+  basket.title = label;
   return basket;
 }
 

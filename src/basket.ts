@@ -160,17 +160,14 @@ export interface Criterion {
   isFulfilled(academicPlan: AcademicPlanView): CriterionFulfillmentResult;
 }
 
-/**
- * A Basket is a collection of modules. In particular, a Basket can contain a single module
- */
-
 export abstract class Basket implements Criterion, CriterionEventDelegate {
-  name: string;
+  title: string;
+  description?: string;
   criterionState: CriterionFulfillmentResult = new CriterionFulfillmentResult();
   parentBasket?: Basket;
 
   constructor(name: string = "") {
-    this.name = name;
+    this.title = name;
   }
 
   abstract accept<ReturnValue>(
@@ -220,7 +217,7 @@ export abstract class Basket implements Criterion, CriterionEventDelegate {
   }
 
   hasMeaningfulName(): boolean {
-    return this.name.length > 0;
+    return this.title.length > 0;
   }
 
   getPrintableClone(meaningfulDepth: number = 2): PrintableBasket {
@@ -256,7 +253,7 @@ class PrintableBasket {
   children: Array<PrintableBasket> = [];
   criterionState: PrintableCriterionState;
   constructor(basket: Basket) {
-    this.name = basket.name;
+    this.name = basket.title;
     this.criterionState = new PrintableCriterionState(basket.criterionState);
   }
 }
