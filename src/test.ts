@@ -6,8 +6,7 @@ import {
   MultiModuleBasket,
   StatefulBasket,
 } from "./basket";
-import { Module } from "./Module";
-import { AcademicPlan } from "./plan";
+import { AcademicPlan, Module } from "./plan";
 import * as log from "./log";
 import * as input from "./input";
 
@@ -249,7 +248,7 @@ export function testAppliedMathsPlan() {
   const es2660 = new Module("ES2660", "", 4);
   const get1031 = new Module("GET1031", "", 4);
   const pc1141 = new Module("PC1141", "", 4);
-  academicPlan.plans[0][0].modules.push(
+  academicPlan.plans[0].modules.push(
     cs1010x,
     cs2030,
     cs2040,
@@ -267,7 +266,7 @@ export function testAppliedMathsPlan() {
   const ger1000 = new Module("GER1000", "", 4);
   const is1103 = new Module("IS1103", "", 4);
 
-  academicPlan.plans[0][1].modules.push(
+  academicPlan.plans[1].modules.push(
     cs2100,
     geq1000,
     ger1000,
@@ -284,7 +283,7 @@ export function testAppliedMathsPlan() {
   const geh1036 = new Module("GEH1036", "", 4);
   const ma2202 = new Module("MA2202", "", 4);
   const ma3210 = new Module("MA3210", "", 4);
-  academicPlan.plans[1][0].modules.push(
+  academicPlan.plans[4].modules.push(
     cs2101,
     cs2103t,
     cs2106,
@@ -299,7 +298,7 @@ export function testAppliedMathsPlan() {
   const cs3217 = new Module("CS3217", "", 5);
   const cs4231 = new Module("CS4231", "", 4);
   const fms1212p = new Module("FMS1212P", "", 4);
-  academicPlan.plans[1][1].modules.push(
+  academicPlan.plans[5].modules.push(
     cs2105,
     cs3217,
     cs4231,
@@ -608,15 +607,9 @@ export function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
   const ue8 = new Module("UE0008", "", 4);
   const ue9 = new Module("UE0009", "", 4);
 
-  academicPlan.plans[0][0].modules.push(
-    cs1101s,
-    es2660,
-    is1103,
-    getxxxx,
-    gerxxxx,
-  );
+  academicPlan.plans[0].modules.push(cs1101s, es2660, is1103, getxxxx, gerxxxx);
 
-  academicPlan.plans[0][1].modules.push(
+  academicPlan.plans[1].modules.push(
     cs1231s,
     cs2100,
     cs2030s,
@@ -625,40 +618,22 @@ export function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
   );
 
   const cs2107 = new Module("CS2107", "", 4);
-  academicPlan.plans[1][0].modules.push(
-    cs2040s,
-    cs2106,
-    cs2107,
-    ma1521,
-    geqxxxx,
-  );
+  academicPlan.plans[4].modules.push(cs2040s, cs2106, cs2107, ma1521, geqxxxx);
 
-  academicPlan.plans[1][1].modules.push(
-    cs2103t,
-    cs2105,
-    st2334,
-    cs2101,
-    gesxxxx,
-  );
+  academicPlan.plans[5].modules.push(cs2103t, cs2105, st2334, cs2101, gesxxxx);
 
   const cs3235 = new Module("CS3235", "", 4);
   const cs3103 = new Module("CS3103", "", 4);
   const it2900 = new Module("IT2900", "", 4);
   const uit2201 = new Module("UIT2201", "", 4);
-  academicPlan.plans[2][0].modules.push(
-    cs3235,
-    cs3219,
-    cs3103,
-    it2900,
-    uit2201,
-  );
+  academicPlan.plans[8].modules.push(cs3235, cs3219, cs3103, it2900, uit2201);
 
   const cs4222 = new Module("CS4222", "", 4);
   const cs5321 = new Module("CS5321", "", 4);
-  academicPlan.plans[2][1].modules.push(cs4218, cs3230, cs5321, cs4222);
+  academicPlan.plans[9].modules.push(cs4218, cs3230, cs5321, cs4222);
 
-  academicPlan.plans[3][0].modules.push(cs3216, ue2, ue3, ue4, ue5);
-  academicPlan.plans[3][1].modules.push(cs3217, ue6, ue7, ue8, ue9);
+  academicPlan.plans[12].modules.push(cs3216, ue2, ue3, ue4, ue5);
+  academicPlan.plans[13].modules.push(cs3217, ue6, ue7, ue8, ue9);
 
   const result = academicPlan.checkAgainstConfig(config);
   // log.log(result);

@@ -39,7 +39,7 @@ export class AcademicPlan {
   private modules: Array<Module> = [];
   private moduleCodeToModuleMap: Map<string, Module> = new Map();
 
-  constructor(startYear: number, numYears: number) {
+  constructor(startYear: number, numYears: number = 4) {
     this.startYear = startYear;
     this.plans = new Array(numYears);
     for (let i = 0; i < numYears * 4; i++) {
