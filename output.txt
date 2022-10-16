@@ -1,0 +1,744 @@
+
+> datastructures@1.0.0 start
+> ts-node src/index.ts
+
+[
+  PrintableBasket {
+    children: [
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'GEH0000' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'GEQ1000' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'GER1000' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'GES0000' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'GET0000' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              }
+            ],
+            name: 'General Education',
+            criterionState: PrintableCriterionState {
+              matchedModules: [ 'GEH0000', 'GEQ1000', 'GER1000', 'GES0000', 'GET0000' ],
+              isFulfilled: true,
+              matchedMCs: 20
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [ 'GEH0000', 'GEQ1000', 'GER1000', 'GES0000', 'GET0000' ],
+          isFulfilled: true,
+          matchedMCs: 20
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS1101S' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  }
+                ],
+                name: 'Programming Methodology',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'CS1101S' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS1231S' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2030S' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2040S' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2100' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2103T' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2105' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2106' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS3230' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [
+                    'CS2103T', 'CS1231S',
+                    'CS2030S', 'CS2040S',
+                    'CS2100',  'CS2105',
+                    'CS2106',  'CS3230'
+                  ],
+                  isFulfilled: true,
+                  matchedMCs: 32
+                }
+              }
+            ],
+            name: 'CS Foundation',
+            criterionState: PrintableCriterionState {
+              matchedModules: [
+                'CS2103T', 'CS1101S',
+                'CS1231S', 'CS2030S',
+                'CS2040S', 'CS2100',
+                'CS2105',  'CS2106',
+                'CS3230'
+              ],
+              isFulfilled: true,
+              matchedMCs: 36
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [
+            'CS2103T', 'CS1101S',
+            'CS1231S', 'CS2030S',
+            'CS2040S', 'CS2100',
+            'CS2105',  'CS2106',
+            'CS3230'
+          ],
+          isFulfilled: true,
+          matchedMCs: 36
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS3216' ],
+                      isFulfilled: true,
+                      matchedMCs: 5
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS3217' ],
+                      isFulfilled: true,
+                      matchedMCs: 5
+                    }
+                  }
+                ],
+                name: 'CS3216/17 combo',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'CS3216', 'CS3217' ],
+                  isFulfilled: true,
+                  matchedMCs: 10
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  }
+                ],
+                name: 'CS3281/82 combo',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              }
+            ],
+            name: 'CS Team Project',
+            criterionState: PrintableCriterionState {
+              matchedModules: [ 'CS3216', 'CS3217' ],
+              isFulfilled: true,
+              matchedMCs: 10
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [ 'CS3216', 'CS3217' ],
+          isFulfilled: true,
+          matchedMCs: 10
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CP3200' ],
+                      isFulfilled: true,
+                      matchedMCs: 6
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CP3202' ],
+                      isFulfilled: true,
+                      matchedMCs: 6
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'CP3200', 'CP3202' ],
+                  isFulfilled: true,
+                  matchedMCs: 12
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [],
+                  isFulfilled: false,
+                  matchedMCs: 0
+                }
+              }
+            ],
+            name: 'CS Industry Experience',
+            criterionState: PrintableCriterionState {
+              matchedModules: [ 'CP3200', 'CP3202' ],
+              isFulfilled: true,
+              matchedMCs: 12
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [ 'CP3200', 'CP3202' ],
+          isFulfilled: true,
+          matchedMCs: 12
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'IS1103' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'IS1103' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'CS2101' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'ES2660' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              }
+            ],
+            name: 'CS IT Professionalism',
+            criterionState: PrintableCriterionState {
+              matchedModules: [ 'IS1103', 'CS2101', 'ES2660' ],
+              isFulfilled: true,
+              matchedMCs: 12
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [ 'IS1103', 'CS2101', 'ES2660' ],
+          isFulfilled: true,
+          matchedMCs: 12
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [
+                      PrintableBasket {
+                        children: [
+                          PrintableBasket {
+                            children: [
+                              PrintableBasket {
+                                children: [],
+                                name: '',
+                                criterionState: PrintableCriterionState {
+                                  matchedModules: [ 'CS2103T', 'CS4218', 'CS3219' ],
+                                  isFulfilled: true,
+                                  matchedMCs: 8
+                                }
+                              }
+                            ],
+                            name: 'SWE FA',
+                            criterionState: PrintableCriterionState {
+                              matchedModules: [ 'CS2103T', 'CS4218', 'CS3219' ],
+                              isFulfilled: true,
+                              matchedMCs: 8
+                            }
+                          }
+                        ],
+                        name: '',
+                        criterionState: PrintableCriterionState {
+                          matchedModules: [ 'CS2103T', 'CS4218', 'CS3219' ],
+                          isFulfilled: true,
+                          matchedMCs: 8
+                        }
+                      }
+                    ],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'CS2103T', 'CS4218', 'CS3219' ],
+                      isFulfilled: true,
+                      matchedMCs: 8
+                    }
+                  },
+                  PrintableBasket {
+                    children: [
+                      PrintableBasket {
+                        children: [],
+                        name: '',
+                        criterionState: PrintableCriterionState {
+                          matchedModules: [
+                            'CS2107',
+                            'CS3235',
+                            'CS3103',
+                            'CS5321',
+                            'CS4222'
+                          ],
+                          isFulfilled: true,
+                          matchedMCs: 20
+                        }
+                      }
+                    ],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [
+                        'CS2107',
+                        'CS3235',
+                        'CS3103',
+                        'CS5321',
+                        'CS4222'
+                      ],
+                      isFulfilled: true,
+                      matchedMCs: 20
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [
+                    'CS2103T', 'CS4218',
+                    'CS3219',  'CS2107',
+                    'CS3235',  'CS3103',
+                    'CS5321',  'CS4222'
+                  ],
+                  isFulfilled: true,
+                  matchedMCs: 28
+                }
+              }
+            ],
+            name: 'Breadth and Depth',
+            criterionState: PrintableCriterionState {
+              matchedModules: [
+                'CS2103T', 'CS4218',
+                'CS3219',  'CS2107',
+                'CS3235',  'CS3103',
+                'CS5321',  'CS4222'
+              ],
+              isFulfilled: true,
+              matchedMCs: 28
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [
+            'CS2103T', 'CS4218',
+            'CS3219',  'CS2107',
+            'CS3235',  'CS3103',
+            'CS5321',  'CS4222'
+          ],
+          isFulfilled: true,
+          matchedMCs: 28
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [
+                      PrintableBasket {
+                        children: [],
+                        name: '',
+                        criterionState: PrintableCriterionState {
+                          matchedModules: [],
+                          isFulfilled: false,
+                          matchedMCs: 0
+                        }
+                      },
+                      PrintableBasket {
+                        children: [],
+                        name: '',
+                        criterionState: PrintableCriterionState {
+                          matchedModules: [],
+                          isFulfilled: false,
+                          matchedMCs: 0
+                        }
+                      }
+                    ],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [],
+                      isFulfilled: false,
+                      matchedMCs: 0
+                    }
+                  },
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'ST2334' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  }
+                ],
+                name: 'Statistics',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'ST2334' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'MA1101R' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'MA1521' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              },
+              PrintableBasket {
+                children: [
+                  PrintableBasket {
+                    children: [],
+                    name: '',
+                    criterionState: PrintableCriterionState {
+                      matchedModules: [ 'PC1221' ],
+                      isFulfilled: true,
+                      matchedMCs: 4
+                    }
+                  }
+                ],
+                name: '',
+                criterionState: PrintableCriterionState {
+                  matchedModules: [ 'PC1221' ],
+                  isFulfilled: true,
+                  matchedMCs: 4
+                }
+              }
+            ],
+            name: 'Math and Sci',
+            criterionState: PrintableCriterionState {
+              matchedModules: [ 'ST2334', 'MA1101R', 'MA1521', 'PC1221' ],
+              isFulfilled: true,
+              matchedMCs: 16
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [ 'ST2334', 'MA1101R', 'MA1521', 'PC1221' ],
+          isFulfilled: true,
+          matchedMCs: 16
+        }
+      },
+      PrintableBasket {
+        children: [
+          PrintableBasket {
+            children: [],
+            name: '',
+            criterionState: PrintableCriterionState {
+              matchedModules: [
+                'IT2900', 'UIT2201',
+                'UE0002', 'UE0003',
+                'UE0004', 'UE0005',
+                'UE0006', 'UE0007',
+                'UE0008', 'UE0009'
+              ],
+              isFulfilled: true,
+              matchedMCs: 40
+            }
+          }
+        ],
+        name: '',
+        criterionState: PrintableCriterionState {
+          matchedModules: [
+            'IT2900', 'UIT2201',
+            'UE0002', 'UE0003',
+            'UE0004', 'UE0005',
+            'UE0006', 'UE0007',
+            'UE0008', 'UE0009'
+          ],
+          isFulfilled: true,
+          matchedMCs: 40
+        }
+      }
+    ],
+    name: 'CS Degree',
+    criterionState: PrintableCriterionState {
+      matchedModules: [
+        'CS2103T', 'GEH0000', 'GEQ1000', 'GER1000',
+        'GES0000', 'GET0000', 'CS1101S', 'CS1231S',
+        'CS2030S', 'CS2040S', 'CS2100',  'CS2105',
+        'CS2106',  'CS3230',  'CS3216',  'CS3217',
+        'CP3200',  'CP3202',  'IS1103',  'CS2101',
+        'ES2660',  'CS4218',  'CS3219',  'CS2107',
+        'CS3235',  'CS3103',  'CS5321',  'CS4222',
+        'ST2334',  'MA1101R', 'MA1521',  'PC1221',
+        'IT2900',  'UIT2201', 'UE0002',  'UE0003',
+        'UE0004',  'UE0005',  'UE0006',  'UE0007',
+        'UE0008',  'UE0009'
+      ],
+      isFulfilled: true,
+      matchedMCs: 174
+    }
+  }
+]

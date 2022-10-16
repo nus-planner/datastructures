@@ -1336,6 +1336,207 @@ function testCS2019Plan(useRequirementsJSONOrYAML: boolean = false) {
   log.log(config.basket.getPrintableClone(7));
 }
 
-testCS2019Plan(false);
+// testCS2019Plan(false);
+
+function testCHSEconsPlan(useRequirementsJSONOrYAML: boolean = false) {
+  // CHS Common Curriculum = {Common core, Integrated, Interdisci}
+  // AI
+  const cs2109s = new Module("CS2109S", "", 4);
+  const hs1501 = new Module("HS1501", "", 4);
+  const it1224 = new Module("IT1224", "", 4);
+  const ccAIBasket = ArrayBasket.or("Common Core - AI", [
+    new ModuleBasket(cs2109s),
+    new ModuleBasket(hs1501),
+    new ModuleBasket(it1224),
+  ]);
+
+  // Communities & Engagement
+  // There's too many, using a placeholder mod
+  const ceXXXX = new Module("CE0000", "", 4);
+  const ccCEBasket = new ModuleBasket(ceXXXX);
+
+  // Digital literacy
+  const gei1001 = new Module("GEI1001", "", 4);
+  const gei1002 = new Module("GEI1002", "", 4);
+  const nm2207 = new Module("NM2207", "", 4);
+  const ccDigLBasket = ArrayBasket.or("Common Core - Digital Literacy", [
+    new ModuleBasket(gei1001),
+    new ModuleBasket(gei1002),
+    new ModuleBasket(nm2207),
+  ]);
+
+  // Design thinking
+  const dtk1234 = new Module("DTK1234", "", 4);
+  const ccDTKBasket = new ModuleBasket(dtk1234);
+
+  // Data literacy
+  const bt1101 = new Module("BT1101", "", 4);
+  const dsa1101 = new Module("DSA1101", "", 4);
+  const dse1101 = new Module("DSE1101", "", 4);
+  const gra1000 = new Module("GRA1000", "", 4);
+  const st1131 = new Module("ST1131", "", 4);
+  const ccDatLBasket = ArrayBasket.or("Common Core - Data Literacy", [
+    new ModuleBasket(bt1101),
+    new ModuleBasket(dsa1101),
+    new ModuleBasket(dse1101),
+    new ModuleBasket(gra1000),
+    new ModuleBasket(st1131),
+  ]);
+
+  // Writing
+  const sp1541 = new Module("SP1541", "", 4);
+  const sp2271 = new Module("SP2271", "", 4);
+  const fas1101 = new Module("FAS1101", "", 4);
+  const ccWritingBasket = ArrayBasket.or("Common Core - Writing", [
+    new ModuleBasket(sp1541),
+    new ModuleBasket(sp2271),
+    new ModuleBasket(fas1101),
+  ]);
+
+  const commonCoreBasket = ArrayBasket.and("Common Core", [
+    ccAIBasket,
+    ccCEBasket,
+    ccDigLBasket,
+    ccDTKBasket,
+    ccDatLBasket,
+    ccWritingBasket,
+  ]);
+
+  // Integrated
+  // Asian studies
+  const hsa1000 = new Module("HSA1000", "", 4);
+  const intAsianStudiesBasket = new ModuleBasket(hsa1000);
+
+  // Humanities
+  const hsh1000 = new Module("HSH1000", "", 4);
+  const intHumanitiesBasket = new ModuleBasket(hsh1000);
+
+  // Scientific Inquiry 1
+  const hsi1000 = new Module("HSI1000", "", 4);
+  const sp2274 = new Module("SP2274", "", 4);
+  const intSciOneBasket = ArrayBasket.or("Integrated - Sci Inq I", [
+    new ModuleBasket(hsi1000),
+    new ModuleBasket(sp2274),
+  ]);
+
+  // Scientific Inquiry 2
+  const hsi2001 = new Module("HSI2001", "", 4);
+  const hsi2002 = new Module("HSI2002", "", 4);
+  const hsi2003 = new Module("HSI2003", "", 4);
+  const hsi2004 = new Module("HSI2004", "", 4);
+  const hsi2005 = new Module("HSI2005", "", 4);
+  const hsi2006 = new Module("HSI2006", "", 4);
+  const hsi2007 = new Module("HSI2007", "", 4);
+  const hsi2008 = new Module("HSI2008", "", 4);
+  const hsi2009 = new Module("HSI2009", "", 4);
+  const hsi2010 = new Module("HSI2010", "", 4);
+  const hsi2011 = new Module("HSI2011", "", 4);
+  const hsi2012 = new Module("HSI2012", "", 4);
+  const hsi2013 = new Module("HSI2013", "", 4);
+  const hsi2014 = new Module("HSI2014", "", 4);
+  const sp3275 = new Module("HSI2014", "", 4);
+
+  const intSciTwoBasket = ArrayBasket.or("Integrated - Sci Inq II", [
+    new ModuleBasket(hsi2001),
+    new ModuleBasket(hsi2002),
+    new ModuleBasket(hsi2003),
+    new ModuleBasket(hsi2004),
+    new ModuleBasket(hsi2005),
+    new ModuleBasket(hsi2006),
+    new ModuleBasket(hsi2007),
+    new ModuleBasket(hsi2008),
+    new ModuleBasket(hsi2009),
+    new ModuleBasket(hsi2010),
+    new ModuleBasket(hsi2011),
+    new ModuleBasket(hsi2012),
+    new ModuleBasket(hsi2013),
+    new ModuleBasket(hsi2014),
+    new ModuleBasket(sp3275),
+  ]);
+
+  // Social Science
+  const hss1000 = new Module("HSS1000", "", 4);
+  const intSSBasket = new ModuleBasket(hss1000);
+
+  const integratedBasket = ArrayBasket.and("Integrated", [
+    intAsianStudiesBasket,
+    intHumanitiesBasket,
+    intSciOneBasket,
+    intSciTwoBasket,
+    intSSBasket,
+  ]);
+
+  // ID 1 & 2
+  const hs2902 = new Module("HS2902", "", 4);
+  const hs2903 = new Module("HS2903", "", 4);
+  const hs2904 = new Module("HS2904", "", 4);
+  const hs2905 = new Module("HS2905", "", 4);
+  const hs2906 = new Module("HS2906", "", 4);
+  const hs2907 = new Module("HS2907", "", 4);
+  const interdisciplinaryBasket = ArrayBasket.atLeastN("Interdisciplinary", 2, [
+    new ModuleBasket(hs2902),
+    new ModuleBasket(hs2903),
+    new ModuleBasket(hs2904),
+    new ModuleBasket(hs2905),
+    new ModuleBasket(hs2906),
+    new ModuleBasket(hs2907),
+  ]);
+
+  const chsCommonCore = ArrayBasket.and("CHS Common Core", [
+    commonCoreBasket,
+    integratedBasket,
+    interdisciplinaryBasket,
+  ]);
+
+  // Econs Baseline
+  const ec1101e = new Module("EC1101E", "", 4);
+  const ec2101 = new Module("EC2101", "", 4);
+  const ec2102 = new Module("EC2102", "", 4);
+  const ec2104 = new Module("EC2104", "", 4);
+  const ec2303 = new Module("EC2303", "", 4);
+  const ec3101 = new Module("EC3101", "", 4);
+  const ec3102 = new Module("EC3102", "", 4);
+  const ec3303 = new Module("EC3303", "", 4);
+  const econsFoundationBasket = ArrayBasket.and("Econs Foundation", [
+    new ModuleBasket(ec1101e),
+    new ModuleBasket(ec2101),
+    new ModuleBasket(ec2102),
+    new ModuleBasket(ec2104),
+    new ModuleBasket(ec2303),
+    new ModuleBasket(ec3101),
+    new ModuleBasket(ec3102),
+    new ModuleBasket(ec3303),
+  ]);
+
+  const econs3kreq = new MultiModuleBasket({
+    moduleCodePrefix: new Set(["EC"]),
+    requiredMCs: 4,
+    earlyTerminate: false,
+  });
+
+  const econs4kreq = new MultiModuleBasket({
+    moduleCodePrefix: new Set(["EC"]),
+    requiredMCs: 20,
+    earlyTerminate: false,
+  });
+
+  const econsMajorBasket = ArrayBasket.and("Econs Major", [
+    econsFoundationBasket,
+    econs3kreq,
+    econs4kreq,
+  ]);
+
+  const ueBasket = new MultiModuleBasket({
+    moduleCodePattern: /./,
+    requiredMCs: 48,
+    earlyTerminate: false,
+  });
+
+  const econsDegree = ArrayBasket.and("Econs degree", [
+    chsCommonCore,
+    econsMajorBasket,
+    ueBasket,
+  ]);
+}
 
 export {};
