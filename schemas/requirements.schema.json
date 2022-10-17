@@ -7,9 +7,13 @@
           "type": "string",
           "description": "This creates a StatefulBasket. TODO: Make this message more user friendly?"
         },
+        "title": {
+          "type": "string",
+          "description": "The name of this requirement"
+        },
         "description": {
           "type": "string",
-          "description": "A text description of this requirement"
+          "description": "A more verbose descriptions of the requirement specifics"
         },
         "at_least_n_mcs": {
           "type": "number",

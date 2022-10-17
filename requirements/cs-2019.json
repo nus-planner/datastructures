@@ -4,11 +4,11 @@
       {
         "ulr": {
           "state": "overallDegreeState",
-          "description": "University Level Requirements",
+          "title": "University Level Requirements",
           "and": [
             {
               "geh": {
-                "description": "GEH modules",
+                "title": "GEH modules",
                 "module": {
                   "code_pattern": "^GEH"
                 }
@@ -18,7 +18,7 @@
             "GER1000",
             {
               "ges": {
-                "description": "GES modules",
+                "title": "GES modules",
                 "module": {
                   "code_pattern": "^GES"
                 }
@@ -37,11 +37,11 @@
       {
         "cs_foundation": {
           "state": "overallDegreeState",
-          "description": "CS foundation",
+          "title": "CS foundation",
           "and": [
             {
               "cs1010": {
-                "description": "CS1010 variants",
+                "title": "CS1010 variants",
                 "or": ["CS1101S", "CS1010X"]
               }
             },
@@ -95,12 +95,12 @@
             "CP3880",
             {
               "": {
-                "or": ["CP3200", "CP3202"]
+                "and": ["CP3200", "CP3202"]
               }
             },
             {
               "": {
-                "or": ["CP3107", "CP3110"]
+                "and": ["CP3107", "CP3110"]
               }
             },
             "IS4010",
